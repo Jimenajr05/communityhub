@@ -5,6 +5,22 @@ export default defineNuxtConfig({
 
   modules: ['@pinia/nuxt', '@vite-pwa/nuxt'],
 
+  css: ['~/assets/css/main.css'],
+
+  app: {
+    head: {
+      link: [
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        {
+          rel: 'stylesheet',
+          href:
+            'https://fonts.googleapis.com/css2?family=Archivo+Black&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap',
+        },
+      ],
+    },
+  },
+
   typescript: {
     strict: true,
     typeCheck: false,
@@ -30,17 +46,17 @@ export default defineNuxtConfig({
       background_color: '#ffffff',
       icons: [
         {
-          src: 'icons/icon-192.png',
+          src: '/icons/icon-192.png',
           sizes: '192x192',
           type: 'image/png',
         },
         {
-          src: 'icons/icon-512.png',
+          src: '/icons/icon-512.png',
           sizes: '512x512',
           type: 'image/png',
         },
         {
-          src: 'icons/icon-512-maskable.png',
+          src: '/icons/icon-512-maskable.png',
           sizes: '512x512',
           type: 'image/png',
           purpose: 'maskable',
@@ -48,6 +64,7 @@ export default defineNuxtConfig({
       ],
     },
     workbox: {
+      navigateFallback: null,
       // Precachea el shell de la app para que funcione offline tras la primera visita.
       globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
       runtimeCaching: [
@@ -88,6 +105,7 @@ export default defineNuxtConfig({
       // Permite probar el service worker también en modo desarrollo (npm run dev)
       enabled: true,
       type: 'module',
+      suppressWarnings: true,
     },
   },
 })
