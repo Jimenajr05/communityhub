@@ -24,6 +24,16 @@
   --ch-coral-dark: #e4553a;
   --ch-marigold: #ffc93c;
 
+  /* Acentos por categoría (portadas de tarjetas de actividad) */
+  --ch-teal: #3fb8a6;
+  --ch-teal-dark: #2f9686;
+  --ch-rose: #f2789f;
+  --ch-rose-dark: #e15586;
+  --ch-violet: #8b7ff0;
+  --ch-violet-dark: #6f62d6;
+  --ch-leaf: #6bbf59;
+  --ch-leaf-dark: #529246;
+
   /* Texto */
   --ch-text-on-ink: #f5f1e8;
   --ch-text-on-ink-muted: #a79fc9;
