@@ -29,7 +29,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       // URL base de la API del backend (Express). Se sobreescribe con NUXT_PUBLIC_API_BASE.
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3000/api',
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:4000/api',
     },
   },
 
