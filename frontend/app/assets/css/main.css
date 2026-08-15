@@ -1,0 +1,317 @@
+/**
+ * Design tokens de CommunityHub.
+ *
+ * Concepto: la plataforma gira en torno a actividades y eventos, así que el
+ * lenguaje visual toma prestado del mundo de las entradas/tickets de evento
+ * (perforaciones, sellos, papel) combinado con el tono nocturno de un
+ * cartel de cartelera comunitaria. Usa estas variables en cualquier
+ * página nueva para mantener consistencia entre lo que hace Fernanda y
+ * lo que hace Jimena.
+ */
+
+:root {
+  /* Superficie "cartelera" (paneles oscuros, fondo de la app) */
+  --ch-ink: #1b1730;
+  --ch-ink-2: #2a2154;
+  --ch-ink-soft: #352a63;
+
+  /* Superficie "papel de ticket" (tarjetas, formularios) */
+  --ch-paper: #fffcf4;
+  --ch-paper-2: #fff6e0;
+
+  /* Acentos */
+  --ch-coral: #ff6b4a;
+  --ch-coral-dark: #e4553a;
+  --ch-marigold: #ffc93c;
+
+  /* Texto */
+  --ch-text-on-ink: #f5f1e8;
+  --ch-text-on-ink-muted: #a79fc9;
+  --ch-text-on-paper: #241b4e;
+  --ch-text-on-paper-muted: #6f6690;
+
+  /* Utilidad */
+  --ch-line: rgba(36, 27, 78, 0.16);
+  --ch-error: #d93b3b;
+  --ch-radius-lg: 28px;
+  --ch-radius-md: 16px;
+  --ch-radius-sm: 10px;
+
+  /* Tipografía */
+  --ch-font-display: "Archivo Black", "Arial Black", sans-serif;
+  --ch-font-body: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  --ch-font-mono: "IBM Plex Mono", "Courier New", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--ch-font-body);
+  background: var(--ch-ink);
+  color: var(--ch-text-on-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/**
+ * Componente "ticket" reutilizable (tarjeta con forma de entrada de evento).
+ * Compartido por cualquier pantalla que use <TicketCard> (login, registro).
+ * Vive aquí, sin scope, para que no se duplique por cada página.
+ */
+.auth-screen {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  background: var(--ch-ink);
+}
+
+.auth-screen__side {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  background: var(--ch-ink-2);
+}
+
+@media (max-width: 900px) {
+  .auth-screen {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-screen__side {
+    padding: 2rem 1.25rem 3rem;
+  }
+}
+
+.ticket {
+  width: 100%;
+  max-width: 25.5rem;
+  background: var(--ch-paper);
+  border-radius: var(--ch-radius-lg);
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.ticket__stub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.75rem;
+  background: var(--ch-paper-2);
+}
+
+.ticket__stub-label {
+  font-family: var(--ch-font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ch-text-on-paper-muted);
+}
+
+.ticket__stub-code {
+  font-family: var(--ch-font-mono);
+  font-size: 0.72rem;
+  color: var(--ch-text-on-paper-muted);
+}
+
+.ticket__perforation {
+  position: relative;
+  height: 0;
+  border-top: 2px dashed var(--ch-line);
+}
+
+.ticket__notch {
+  position: absolute;
+  top: -10px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--ch-ink-2);
+}
+
+.ticket__notch--left {
+  left: -10px;
+}
+
+.ticket__notch--right {
+  right: -10px;
+}
+
+.ticket__form {
+  padding: 2.25rem 1.75rem 2rem;
+}
+
+.ticket__form h2 {
+  font-family: var(--ch-font-display);
+  font-weight: 400;
+  font-size: 1.6rem;
+  margin: 0 0 0.5rem;
+  color: var(--ch-text-on-paper);
+}
+
+.ticket__subtitle {
+  margin: 0 0 1.75rem;
+  color: var(--ch-text-on-paper-muted);
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.ticket__footer {
+  margin: 1.4rem 0 0;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--ch-text-on-paper-muted);
+}
+
+.ticket__footer a {
+  color: var(--ch-coral-dark);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ticket__footer a:hover {
+  text-decoration: underline;
+}
+
+.field {
+  margin-bottom: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.field label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ch-text-on-paper);
+}
+
+.field input {
+  font-family: var(--ch-font-body);
+  font-size: 0.96rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--ch-radius-sm);
+  border: 1.5px solid var(--ch-line);
+  background: #fff;
+  color: var(--ch-text-on-paper);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  width: 100%;
+}
+
+.field input::placeholder {
+  color: #b9b2d1;
+}
+
+.field input:focus-visible {
+  outline: none;
+  border-color: var(--ch-coral);
+  box-shadow: 0 0 0 3px rgba(255, 107, 74, 0.18);
+}
+
+.field input:disabled {
+  opacity: 0.6;
+}
+
+.field-hint {
+  font-size: 0.78rem;
+  color: var(--ch-text-on-paper-muted);
+}
+
+.password-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input input {
+  flex: 1;
+  padding-right: 3.6rem;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  font-family: var(--ch-font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ch-text-on-paper-muted);
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+}
+
+.password-toggle:hover {
+  color: var(--ch-coral-dark);
+}
+
+.password-toggle:focus-visible {
+  outline: 2px solid var(--ch-coral);
+  outline-offset: 1px;
+}
+
+.form-error {
+  margin: 0 0 1.1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--ch-radius-sm);
+  background: rgba(217, 59, 59, 0.1);
+  border: 1px solid rgba(217, 59, 59, 0.35);
+  color: var(--ch-error);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: none;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-coral);
+  color: #fff9f0;
+  font-family: var(--ch-font-body);
+  font-weight: 700;
+  font-size: 0.98rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: var(--ch-coral-dark);
+}
+
+.submit-btn:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.submit-btn:focus-visible {
+  outline: 3px solid var(--ch-marigold);
+  outline-offset: 2px;
+}
+
+.submit-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+}
