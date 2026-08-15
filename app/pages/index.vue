@@ -22,11 +22,10 @@ async function onLogout() {
         <h1 class="home__headline">
           Hola, {{ authStore.usuario?.firstName }}<span class="home__wave">👋</span>
         </h1>
-        <p class="home__copy">
-          Sesión iniciada. El listado de actividades todavía está en construcción — vuelve pronto.
-        </p>
+        <p class="home__copy">Sesión iniciada. ¿Qué quieres hacer hoy?</p>
         <div class="home__actions">
-          <button type="button" class="submit-btn home__btn" @click="onLogout">Cerrar sesión</button>
+          <NuxtLink to="/actividades" class="submit-btn home__btn">Ver actividades</NuxtLink>
+          <button type="button" class="home__btn home__btn--ghost" @click="onLogout">Cerrar sesión</button>
         </div>
       </template>
 
@@ -36,8 +35,8 @@ async function onLogout() {
           Talleres, deportes, arte y encuentros de tu comunidad — todo en un solo lugar.
         </p>
         <div class="home__actions">
-          <NuxtLink to="/login" class="submit-btn home__btn">Iniciar sesión</NuxtLink>
-          <NuxtLink to="/registro" class="home__btn home__btn--ghost">Crear cuenta</NuxtLink>
+          <NuxtLink to="/actividades" class="submit-btn home__btn">Ver actividades</NuxtLink>
+          <NuxtLink to="/login" class="home__btn home__btn--ghost">Iniciar sesión</NuxtLink>
         </div>
       </template>
     </div>
