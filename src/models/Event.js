@@ -6,10 +6,19 @@ const eventSchema = new mongoose.Schema(
       type: String,
       required: [true, 'El título es obligatorio'],
       trim: true,
+      validate: {
+        validator: (value) => Boolean(value && value.trim().length > 0),
+        message: 'El título no puede estar vacío',
+      },
     },
     description: {
       type: String,
       required: [true, 'La descripción es obligatoria'],
+      trim: true,
+      validate: {
+        validator: (value) => Boolean(value && value.trim().length > 0),
+        message: 'La descripción no puede estar vacía',
+      },
     },
     category: {
       type: mongoose.Schema.Types.ObjectId,
@@ -35,6 +44,10 @@ const eventSchema = new mongoose.Schema(
       type: String,
       required: [true, 'La ubicación es obligatoria'],
       trim: true,
+      validate: {
+        validator: (value) => Boolean(value && value.trim().length > 0),
+        message: 'La ubicación no puede estar vacía',
+      },
     },
     capacity: {
       type: Number,
