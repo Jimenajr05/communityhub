@@ -5,45 +5,52 @@ const eventsStore = useEventsStore();
 const searchTerm = ref('');
 const categoriaSeleccionada = ref<string | null>(null);
 const soloConCupo = ref(false);
+const fechaSeleccionada = ref('');
+
+// Todos los filtros se envían al backend (GET /api/events?search=&category=&
+// available=&date=) para que el filtrado sea real y no dependa de lo que ya
+// haya llegado al cliente.
+function buscarConFiltros() {
+  eventsStore.buscar({
+    search: searchTerm.value.trim() || undefined,
+    category: categoriaSeleccionada.value || undefined,
+    available: soloConCupo.value || undefined,
+    date: fechaSeleccionada.value || undefined,
+  });
+}
 
 onMounted(() => {
-  eventsStore.buscar();
+  eventsStore.cargarCategorias();
+  buscarConFiltros();
 });
 
 let debounceHandle: ReturnType<typeof setTimeout> | null = null;
-watch(searchTerm, (value) => {
+watch(searchTerm, () => {
   if (debounceHandle) clearTimeout(debounceHandle);
-  debounceHandle = setTimeout(() => {
-    eventsStore.buscar({ search: value.trim() || undefined });
-  }, 350);
+  debounceHandle = setTimeout(buscarConFiltros, 350);
 });
 
 function reintentar() {
-  eventsStore.buscar({ search: searchTerm.value.trim() || undefined });
+  buscarConFiltros();
 }
 
-// Los chips de categoría se arman con lo que ya llegó del backend (no hay
-// endpoint de categorías todavía), así que solo se muestran las que
-// realmente tienen actividades activas en este momento.
-const categoriasDisponibles = computed(() => {
-  const nombres = new Set(eventsStore.actividades.map((a) => a.category?.name).filter(Boolean));
-  return Array.from(nombres) as string[];
-});
+function toggleCategoria(id: string) {
+  categoriaSeleccionada.value = categoriaSeleccionada.value === id ? null : id;
+  buscarConFiltros();
+}
 
-const actividadesFiltradas = computed(() => {
-  return eventsStore.actividades.filter((actividad) => {
-    if (categoriaSeleccionada.value && actividad.category?.name !== categoriaSeleccionada.value) {
-      return false;
-    }
-    if (soloConCupo.value && actividad.spotsAvailable <= 0) {
-      return false;
-    }
-    return true;
-  });
-});
+function toggleCupo() {
+  soloConCupo.value = !soloConCupo.value;
+  buscarConFiltros();
+}
 
-function toggleCategoria(nombre: string) {
-  categoriaSeleccionada.value = categoriaSeleccionada.value === nombre ? null : nombre;
+function onFechaChange() {
+  buscarConFiltros();
+}
+
+function limpiarFecha() {
+  fechaSeleccionada.value = '';
+  buscarConFiltros();
 }
 </script>
 
@@ -60,7 +67,7 @@ function toggleCategoria(nombre: string) {
         <p>Talleres, deportes, arte y encuentros de tu comunidad.</p>
 
         <div class="search-box">
-          <span class="search-box__icon" aria-hidden="true">🔍</span>
+          <span class="search-box__icon" aria-hidden="true"></span>
           <input
             v-model="searchTerm"
             type="search"
@@ -69,25 +76,38 @@ function toggleCategoria(nombre: string) {
           />
         </div>
 
-        <div v-if="categoriasDisponibles.length > 0 || eventsStore.actividades.length > 0" class="filter-chips">
+        <div v-if="eventsStore.categorias.length > 0" class="filter-chips">
           <button
-            v-for="nombre in categoriasDisponibles"
-            :key="nombre"
+            v-for="categoria in eventsStore.categorias"
+            :key="categoria._id"
             type="button"
             class="filter-chip"
-            :class="{ 'filter-chip--active': categoriaSeleccionada === nombre }"
-            @click="toggleCategoria(nombre)"
+            :class="{ 'filter-chip--active': categoriaSeleccionada === categoria._id }"
+            @click="toggleCategoria(categoria._id)"
           >
-            {{ nombre }}
+            {{ categoria.name }}
           </button>
 
           <button
             type="button"
             class="filter-chip filter-chip--cupo"
             :class="{ 'filter-chip--active': soloConCupo }"
-            @click="soloConCupo = !soloConCupo"
+            @click="toggleCupo"
           >
             Con cupo disponible
+          </button>
+
+          <label class="filter-chip filter-chip--date" :class="{ 'filter-chip--active': fechaSeleccionada }">
+            <input
+              v-model="fechaSeleccionada"
+              type="date"
+              aria-label="Filtrar por fecha"
+              @change="onFechaChange"
+            />
+          </label>
+
+          <button v-if="fechaSeleccionada" type="button" class="filter-chip filter-chip--clear" @click="limpiarFecha">
+            ✕ fecha
           </button>
         </div>
       </div>
@@ -112,14 +132,14 @@ function toggleCategoria(nombre: string) {
       </div>
 
       <!-- Sin resultados -->
-      <div v-else-if="actividadesFiltradas.length === 0" class="state-message">
-        <span class="state-message__emoji" aria-hidden="true">🗓️</span>
+      <div v-else-if="eventsStore.actividades.length === 0" class="state-message">
+        <span class="state-message__emoji" aria-hidden="true"></span>
         <p>No encontramos actividades{{ searchTerm ? ` para “${searchTerm}”` : '' }}.</p>
       </div>
 
       <!-- Resultados -->
       <div v-else class="activities-grid">
-        <EventCard v-for="actividad in actividadesFiltradas" :key="actividad._id" :actividad="actividad" />
+        <EventCard v-for="actividad in eventsStore.actividades" :key="actividad._id" :actividad="actividad" />
       </div>
     </main>
   </div>
@@ -269,6 +289,31 @@ function toggleCategoria(nombre: string) {
 
 .filter-chip--cupo {
   border-style: dashed;
+}
+
+.filter-chip--date {
+  padding: 0.35rem 0.7rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.filter-chip--date input[type='date'] {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-family: var(--ch-font-mono);
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.filter-chip--date input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+
+.filter-chip--clear {
+  border-style: dashed;
+  opacity: 0.8;
 }
 
 .activities-body {

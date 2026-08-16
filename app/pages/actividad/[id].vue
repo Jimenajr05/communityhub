@@ -2,11 +2,17 @@
 import type { Actividad } from '~/stores/events';
 
 const route = useRoute();
+const authStore = useAuthStore();
 const eventsStore = useEventsStore();
 
 const actividad = ref<Actividad | null>(null);
 const cargando = ref(true);
 const error = ref<string | null>(null);
+
+const procesandoAccion = ref(false);
+const mensajeAccion = ref<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
+const estaInscrito = ref(false);
+const esFavorito = ref(false);
 
 onMounted(async () => {
   const id = route.params.id as string;
@@ -20,11 +26,93 @@ onMounted(async () => {
   if (res) {
     actividad.value = res;
     useHead({ title: `${res.title} · CommunityHub` });
+
+    if (authStore.estaAutenticado) {
+      await verificarEstados(id);
+    }
   } else {
     error.value = 'No se encontró la actividad solicitada.';
   }
   cargando.value = false;
 });
+
+async function verificarEstados(eventId: string) {
+  const { apiFetch } = useApi();
+  try {
+    const [regRes, favRes] = await Promise.all([
+      apiFetch<{ data: { isRegistered: boolean } }>(`/events/${eventId}/register/status`),
+      apiFetch<{ data: { isFavorite: boolean } }>(`/events/${eventId}/favorite/status`),
+    ]);
+    estaInscrito.value = regRes.data.isRegistered;
+    esFavorito.value = favRes.data.isFavorite;
+  } catch {
+    // Si falla la consulta de estado, mantenemos en false por defecto
+  }
+}
+
+async function alternarInscripcion() {
+  if (!authStore.estaAutenticado) {
+    navigateTo(`/login?redirect=${encodeURIComponent(route.fullPath)}`);
+    return;
+  }
+  if (!actividad.value || procesandoAccion.value) return;
+
+  procesandoAccion.value = true;
+  mensajeAccion.value = null;
+
+  try {
+    if (estaInscrito.value) {
+      await eventsStore.cancelarInscripcion(actividad.value._id);
+      estaInscrito.value = false;
+      actividad.value.spotsAvailable++;
+      mensajeAccion.value = { tipo: 'exito', texto: 'Inscripción cancelada exitosamente.' };
+    } else {
+      await eventsStore.inscribirse(actividad.value._id);
+      estaInscrito.value = true;
+      actividad.value.spotsAvailable--;
+      mensajeAccion.value = { tipo: 'exito', texto: 'Te has inscrito exitosamente a la actividad.' };
+    }
+  } catch (err: unknown) {
+    const fetchError = err as { data?: { message?: string } };
+    mensajeAccion.value = {
+      tipo: 'error',
+      texto: fetchError?.data?.message || 'Ocurrió un error al procesar la inscripción.',
+    };
+  } finally {
+    procesandoAccion.value = false;
+  }
+}
+
+async function alternarFavorito() {
+  if (!authStore.estaAutenticado) {
+    navigateTo(`/login?redirect=${encodeURIComponent(route.fullPath)}`);
+    return;
+  }
+  if (!actividad.value || procesandoAccion.value) return;
+
+  procesandoAccion.value = true;
+  mensajeAccion.value = null;
+
+  try {
+    if (esFavorito.value) {
+      await eventsStore.quitarFavorito(actividad.value._id);
+      esFavorito.value = false;
+      mensajeAccion.value = { tipo: 'exito', texto: 'Removido de tus favoritos.' };
+    } else {
+      await eventsStore.marcarFavorito(actividad.value._id);
+      esFavorito.value = true;
+      mensajeAccion.value = { tipo: 'exito', texto: 'Guardado en tus favoritos.' };
+    }
+  } catch (err: unknown) {
+    const fetchError = err as { data?: { message?: string } };
+    mensajeAccion.value = {
+      tipo: 'error',
+      texto: fetchError?.data?.message || 'Error al actualizar favoritos.',
+    };
+  } finally {
+    procesandoAccion.value = false;
+  }
+}
 
 const fechaFormateada = computed(() => {
   if (!actividad.value?.date) return '';
@@ -60,15 +148,27 @@ const sinCupo = computed(() => (actividad.value?.spotsAvailable ?? 0) <= 0);
 
       <article v-else class="activity-card">
         <header class="activity-header">
-          <div class="activity-header__tags">
-            <span class="activity-category">{{ actividad.category?.name ?? 'General' }}</span>
-            <span class="activity-status" :class="`activity-status--${actividad.status}`">
-              {{ actividad.status === 'active' ? 'Activa' : actividad.status === 'cancelled' ? 'Cancelada' : 'Finalizada' }}
-            </span>
+          <div class="activity-header__top">
+            <div class="activity-header__tags">
+              <span class="activity-category">{{ actividad.category?.name ?? 'General' }}</span>
+              <span class="activity-status" :class="`activity-status--${actividad.status}`">
+                {{ actividad.status === 'active' ? 'Activa' : actividad.status === 'cancelled' ? 'Cancelada' :
+                'Finalizada' }}
+              </span>
+            </div>
+
+            <button class="fav-btn" :class="{ 'fav-btn--active': esFavorito }" :disabled="procesandoAccion"
+              @click="alternarFavorito" :title="esFavorito ? 'Quitar de favoritos' : 'Guardar en favoritos'">
+              {{ esFavorito ? '❤️ Favorito' : '🤍 Guardar' }}
+            </button>
           </div>
 
           <h1 class="activity-title">{{ actividad.title }}</h1>
         </header>
+
+        <div v-if="mensajeAccion" class="action-banner" :class="`action-banner--${mensajeAccion.tipo}`">
+          {{ mensajeAccion.texto }}
+        </div>
 
         <div class="activity-meta">
           <div class="meta-item">
@@ -100,7 +200,8 @@ const sinCupo = computed(() => (actividad.value?.spotsAvailable ?? 0) <= 0);
             <div>
               <strong>Cupos disponibles</strong>
               <p :class="{ 'spots--full': sinCupo }">
-                {{ sinCupo ? 'Sin cupos disponibles' : `${actividad.spotsAvailable} de ${actividad.capacity} cupos libres` }}
+                {{ sinCupo ? 'Sin cupos disponibles' : `${actividad.spotsAvailable} de ${actividad.capacity} cupos
+                libres` }}
               </p>
             </div>
           </div>
@@ -110,6 +211,25 @@ const sinCupo = computed(() => (actividad.value?.spotsAvailable ?? 0) <= 0);
           <h2>Descripción</h2>
           <p>{{ actividad.description }}</p>
         </section>
+
+        <footer class="activity-actions">
+          <div v-if="!authStore.estaAutenticado" class="auth-prompt">
+            <p>Inicia sesión o regístrate para inscribirte en esta actividad.</p>
+            <NuxtLink :to="`/login?redirect=${encodeURIComponent(route.fullPath)}`" class="action-btn action-btn--primary">Iniciar Sesión</NuxtLink>
+          </div>
+
+          <template v-else>
+            <button v-if="!estaInscrito" class="action-btn action-btn--primary"
+              :disabled="sinCupo || actividad.status !== 'active' || procesandoAccion" @click="alternarInscripcion">
+              {{ procesandoAccion ? 'Procesando…' : sinCupo ? 'Cupos Agotados' : 'Inscribirse a esta Actividad' }}
+            </button>
+
+            <button v-else class="action-btn action-btn--danger" :disabled="procesandoAccion"
+              @click="alternarInscripcion">
+              {{ procesandoAccion ? 'Procesando…' : 'Cancelar mi Inscripción' }}
+            </button>
+          </template>
+        </footer>
       </article>
     </div>
   </div>
@@ -167,11 +287,34 @@ const sinCupo = computed(() => (actividad.value?.spotsAvailable ?? 0) <= 0);
   box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5);
 }
 
+.activity-header__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
 .activity-header__tags {
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  margin-bottom: 1rem;
+}
+
+.fav-btn {
+  background: transparent;
+  border: 1px solid var(--ch-line);
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: var(--ch-font-mono);
+  transition: all 0.2s ease;
+}
+
+.fav-btn--active {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  color: #dc2626;
 }
 
 .activity-category {
@@ -210,6 +353,23 @@ const sinCupo = computed(() => (actividad.value?.spotsAvailable ?? 0) <= 0);
   font-size: clamp(1.8rem, 4vw, 2.4rem);
   margin: 0 0 1.5rem;
   line-height: 1.2;
+}
+
+.action-banner {
+  padding: 0.8rem 1rem;
+  border-radius: var(--ch-radius-sm);
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.action-banner--exito {
+  background: rgba(16, 185, 129, 0.15);
+  color: #047857;
+}
+
+.action-banner--error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
 }
 
 .activity-meta {
@@ -267,9 +427,67 @@ const sinCupo = computed(() => (actividad.value?.spotsAvailable ?? 0) <= 0);
   font-size: 1.02rem;
 }
 
+.activity-actions {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--ch-line);
+}
+
+.auth-prompt {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  background: var(--ch-sand-light);
+  padding: 1rem 1.25rem;
+  border-radius: var(--ch-radius-sm);
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.75rem;
+  border-radius: 999px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.action-btn--primary {
+  background: var(--ch-coral);
+  color: #ffffff;
+}
+
+.action-btn--primary:hover:not(:disabled) {
+  background: var(--ch-coral-dark);
+}
+
+.action-btn--danger {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.action-btn--danger:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 @media (max-width: 640px) {
   .activity-card {
     padding: 1.5rem;
+  }
+
+  .auth-prompt {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
   }
 }
 </style>
