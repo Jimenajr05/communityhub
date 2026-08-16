@@ -2,14 +2,14 @@ import { defineStore } from 'pinia';
 
 // Estos campos reflejan exactamente lo que devuelve el backend
 // (services/auth.service.js -> sanitizeUser y models/User.js).
-// Ojo: el modelo usa firstName/lastName y roles en inglés
-// ('admin' | 'organizer' | 'user'), no nombre/apellido en español.
+// Ojo: el modelo usa firstName/lastName (en inglés) pero los roles están
+// en español ('administrador' | 'organizador' | 'usuario').
 export interface Usuario {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
-  role: 'admin' | 'organizer' | 'user';
+  role: 'administrador' | 'organizador' | 'usuario';
   profilePicture: string | null;
 }
 
@@ -104,6 +104,16 @@ export const useAuthStore = defineStore('auth', {
         this.token = null;
         cookieToken.value = null;
       }
+    },
+
+    async actualizarPerfil(payload: { firstName?: string; lastName?: string; profilePicture?: string }) {
+      if (!this.usuario) return;
+      const { apiFetch } = useApi();
+      const respuesta = await apiFetch<MePayload>(`/users/${this.usuario.id}`, {
+        method: 'PUT',
+        body: payload,
+      });
+      this.usuario = respuesta.data.user;
     },
 
     async logout() {
