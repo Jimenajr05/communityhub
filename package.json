@@ -1,0 +1,12 @@
+{
+  "name": "communityhub-lambda",
+  "version": "1.0.0",
+  "description": "Función AWS Lambda: procesador serverless de recordatorios de actividades para CommunityHub",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "mongoose": "^8.5.1"
+  }
+}
