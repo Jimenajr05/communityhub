@@ -14,3 +14,7 @@ onMounted(() => {
     <NuxtPage />
   </div>
 </template>
+
+<style>
+/* Estilos globales gestionados en assets/css/main.css */
+</style>
