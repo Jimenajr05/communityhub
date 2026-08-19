@@ -15,7 +15,7 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(null, true);
+        callback(new Error('No permitido por la política de CORS'));
       }
     },
     credentials: true,

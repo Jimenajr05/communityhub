@@ -1,19 +1,28 @@
 const express = require('express');
 const eventController = require('../controllers/event.controller');
+const registrationController = require('../controllers/registration.controller');
+const favoriteController = require('../controllers/favorite.controller');
 const { authenticate, authorize } = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
-// Públicas: cualquiera puede ver el listado y el detalle de actividades,
-// sin necesidad de iniciar sesión.
+// Públicas: cualquiera puede ver el listado y el detalle de actividades
 router.get('/', eventController.list);
 router.get('/:id', eventController.getById);
 
+// Protegidas: inscripciones
+router.post('/:id/register', authenticate, registrationController.registerToEvent);
+router.delete('/:id/register', authenticate, registrationController.cancelRegistration);
+router.get('/:id/register/status', authenticate, registrationController.checkStatus);
+
+// Protegidas: favoritos
+router.post('/:id/favorite', authenticate, favoriteController.addFavorite);
+router.delete('/:id/favorite', authenticate, favoriteController.removeFavorite);
+router.get('/:id/favorite/status', authenticate, favoriteController.checkStatus);
+
 // Protegidas: solo organizadores y admins pueden crear/editar/eliminar.
-// La verificación de que sea EL DUEÑO del evento (o admin) vive en el
-// servicio, no aquí, porque requiere cargar el documento primero.
-router.post('/', authenticate, authorize('organizer', 'admin'), eventController.create);
-router.put('/:id', authenticate, authorize('organizer', 'admin'), eventController.update);
-router.delete('/:id', authenticate, authorize('organizer', 'admin'), eventController.remove);
+router.post('/', authenticate, authorize('organizador', 'administrador'), eventController.create);
+router.put('/:id', authenticate, authorize('organizador', 'administrador'), eventController.update);
+router.delete('/:id', authenticate, authorize('organizador', 'administrador'), eventController.remove);
 
 module.exports = router;
