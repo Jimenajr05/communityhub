@@ -10,6 +10,7 @@ const errorMessage = ref('');
 
 const authStore = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 
 const cargando = computed(() => authStore.cargando);
 const isFormValid = computed(
@@ -34,7 +35,13 @@ async function onSubmit() {
       email: email.value.trim(),
       password: password.value,
     });
-    router.push('/');
+    // Misma lógica que login.vue: solo se acepta una ruta interna.
+    const redirectParam = route.query.redirect;
+    const destino =
+      typeof redirectParam === 'string' && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+        ? redirectParam
+        : '/';
+    router.push(destino);
   } catch (err: unknown) {
     const fetchError = err as { data?: { message?: string } };
     errorMessage.value = fetchError?.data?.message ?? 'No pudimos crear tu cuenta. Intenta de nuevo.';
@@ -66,7 +73,6 @@ async function onSubmit() {
                 type="text"
                 autocomplete="given-name"
                 required
-                placeholder="María"
                 :disabled="cargando"
               />
             </div>
@@ -79,7 +85,6 @@ async function onSubmit() {
                 type="text"
                 autocomplete="family-name"
                 required
-                placeholder="Fernández"
                 :disabled="cargando"
               />
             </div>
@@ -93,7 +98,7 @@ async function onSubmit() {
               type="email"
               autocomplete="email"
               required
-              placeholder="tu@correo.com"
+              placeholder=""
               :disabled="cargando"
             />
           </div>
@@ -108,7 +113,6 @@ async function onSubmit() {
                 autocomplete="new-password"
                 required
                 minlength="8"
-                placeholder="••••••••"
                 :disabled="cargando"
               />
               <button

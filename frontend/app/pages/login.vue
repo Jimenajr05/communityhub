@@ -8,6 +8,7 @@ const errorMessage = ref('');
 
 const authStore = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 
 const cargando = computed(() => authStore.cargando);
 const isFormValid = computed(() => /\S+@\S+\.\S+/.test(email.value) && password.value.length > 0);
@@ -21,7 +22,16 @@ async function onSubmit() {
 
   try {
     await authStore.login(email.value, password.value);
-    router.push('/');
+    // Si vinimos empujados por un middleware (auth/admin/organizer) con
+    // ?redirect=/ruta-original, volvemos ahí en vez de mandar siempre a "/".
+    // Solo se acepta una ruta interna (empieza con "/", no "//") para evitar
+    // un open-redirect si alguien manipula el query param.
+    const redirectParam = route.query.redirect;
+    const destino =
+      typeof redirectParam === 'string' && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+        ? redirectParam
+        : '/';
+    router.push(destino);
   } catch (err: unknown) {
     const fetchError = err as { data?: { message?: string } };
     errorMessage.value =
@@ -51,8 +61,7 @@ async function onSubmit() {
               v-model.trim="email"
               type="email"
               autocomplete="email"
-              required
-              placeholder="tu@correo.com"
+              placeholder=""
               :disabled="cargando"
             />
           </div>
@@ -66,7 +75,6 @@ async function onSubmit() {
                 :type="showPassword ? 'text' : 'password'"
                 autocomplete="current-password"
                 required
-                placeholder="••••••••"
                 :disabled="cargando"
               />
               <button

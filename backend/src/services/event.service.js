@@ -3,6 +3,7 @@ const Event = require('../models/Event');
 const Category = require('../models/Category');
 const Registration = require('../models/Registration');
 const Favorite = require('../models/Favorite');
+const Notification = require('../models/Notification');
 const ApiError = require('../utils/ApiError');
 
 const DEFAULT_LIMIT = 12;
@@ -33,7 +34,7 @@ async function attachAvailability(events) {
 
 function ensureOwnership(event, requester) {
     const isOwner = event.organizer.toString() === requester.id.toString();
-    const isAdmin = requester.role === 'admin';
+    const isAdmin = requester.role === 'administrador';
     if (!isOwner && !isAdmin) {
         throw ApiError.forbidden('No puedes modificar una actividad que no organizas');
     }
@@ -163,8 +164,24 @@ async function updateEvent(id, requester, payload) {
         await assertCategoryExists(payload.category);
     }
 
+    const wasActive = event.status === 'active';
     Object.assign(event, payload);
     await event.save(); // corre las validaciones del schema (fecha futura, capacidad > 0, etc.)
+
+    // Si el organizador cancela la actividad, se notifica a quienes estaban inscritos.
+    if (wasActive && event.status === 'cancelled') {
+        const registrations = await Registration.find({ event: event._id, status: 'confirmed' });
+        await Promise.all(
+            registrations.map((registration) =>
+                Notification.create({
+                    user: registration.user,
+                    event: event._id,
+                    type: 'cancellation',
+                    message: `La actividad "${event.title}" fue cancelada por el organizador.`,
+                })
+            )
+        );
+    }
 
     return getEventById(event._id);
 }
