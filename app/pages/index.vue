@@ -20,7 +20,7 @@ async function onLogout() {
 
       <template v-if="authStore.estaAutenticado">
         <h1 class="home__headline">
-          Hola, {{ authStore.usuario?.firstName }}<span class="home__wave">👋</span>
+          Hola, {{ authStore.usuario?.firstName }}<span class="home__wave"></span>
         </h1>
         <p class="home__copy">Sesión iniciada. ¿Qué quieres hacer hoy?</p>
         <div class="home__actions">
