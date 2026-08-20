@@ -128,6 +128,7 @@ PUT    /api/users/:id                 Editar perfil (🔒)
 DELETE /api/users/:id                 Eliminar usuario (🔒 admin)
 GET    /api/users/me/registrations    Mis inscripciones (🔒)
 GET    /api/users/me/favorites        Mis favoritos (🔒)
+POST   /api/users/me/avatar           Subir foto de perfil (multipart/form-data: avatar) (🔒)
 ```
 
 ### Actividades
