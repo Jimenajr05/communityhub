@@ -57,7 +57,7 @@ async function eliminar(actividad: Actividad) {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="actividad in eventsStore.actividades" :key="actividad._id">
+            <tr v-for="actividad in actividades" :key="actividad._id">
               <td><NuxtLink :to="`/actividad/${actividad._id}`">{{ actividad.title }}</NuxtLink></td>
               <td>{{ actividad.organizer?.firstName }} {{ actividad.organizer?.lastName }}</td>
               <td>{{ new Date(actividad.date).toLocaleDateString('es-CR') }}</td>

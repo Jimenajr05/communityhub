@@ -44,22 +44,22 @@ const rol = computed(() => authStore.usuario?.role);
       <template v-else-if="metrics">
         <!-- Dashboard de usuario -->
         <div v-if="rol === 'usuario'" class="stat-grid">
-          <div class="stat-card">
+          <NuxtLink to="/mis-inscripciones" class="stat-card" style="text-decoration: none; color: inherit;">
             <span class="stat-card__value">{{ metrics.registrationsCount }}</span>
             <span class="stat-card__label">Inscripciones totales</span>
-          </div>
-          <div class="stat-card">
+          </NuxtLink>
+          <NuxtLink to="/actividades" class="stat-card" style="text-decoration: none; color: inherit;">
             <span class="stat-card__value">{{ metrics.upcomingCount }}</span>
             <span class="stat-card__label">Próximas actividades</span>
-          </div>
-          <div class="stat-card">
+          </NuxtLink>
+          <NuxtLink to="/favoritos" class="stat-card" style="text-decoration: none; color: inherit;">
             <span class="stat-card__value">{{ metrics.favoritesCount }}</span>
             <span class="stat-card__label">Favoritos</span>
-          </div>
-          <div class="stat-card">
+          </NuxtLink>
+          <NuxtLink to="/notificaciones" class="stat-card" style="text-decoration: none; color: inherit;">
             <span class="stat-card__value">{{ metrics.unreadNotificationsCount }}</span>
-            <span class="stat-card__label">Notificaciones sin leer</span>
-          </div>
+            <span class="stat-card__label">Notificaciones sin leer →</span>
+          </NuxtLink>
         </div>
 
         <!-- Dashboard de organizador -->

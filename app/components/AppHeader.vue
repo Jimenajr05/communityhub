@@ -6,8 +6,24 @@
  * su propio link de "volver".
  */
 const authStore = useAuthStore();
+const notificationsStore = useNotificationsStore();
 const router = useRouter();
 const menuAbierto = ref(false);
+
+onMounted(() => {
+  if (authStore.estaAutenticado) {
+    notificationsStore.obtenerNotificaciones();
+  }
+});
+
+watch(
+  () => authStore.estaAutenticado,
+  (autenticado) => {
+    if (autenticado) {
+      notificationsStore.obtenerNotificaciones();
+    }
+  }
+);
 
 async function cerrarSesion() {
   menuAbierto.value = false;
@@ -39,6 +55,12 @@ async function cerrarSesion() {
 
         <template v-if="authStore.estaAutenticado">
           <NuxtLink to="/dashboard" @click="menuAbierto = false">Dashboard</NuxtLink>
+          <NuxtLink to="/notificaciones" class="app-header__notif-link" @click="menuAbierto = false">
+            <span>Notificaciones</span>
+            <span v-if="notificationsStore.sinLeerCount > 0" class="app-header__badge">
+              {{ notificationsStore.sinLeerCount }}
+            </span>
+          </NuxtLink>
           <NuxtLink to="/favoritos" @click="menuAbierto = false">Favoritos</NuxtLink>
           <NuxtLink to="/mis-inscripciones" @click="menuAbierto = false">Mis inscripciones</NuxtLink>
           <NuxtLink
@@ -135,6 +157,28 @@ async function cerrarSesion() {
 .app-header__nav a:hover,
 .app-header__nav a.router-link-exact-active {
   color: var(--ch-text-on-ink);
+}
+
+.app-header__notif-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.app-header__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: var(--ch-coral);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-family: var(--ch-font-mono);
+  font-weight: 700;
+  line-height: 1;
 }
 
 .app-header__cta {
