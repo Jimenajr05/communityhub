@@ -114,8 +114,9 @@ async function cerrarSesion() {
   align-items: center;
   gap: 0.5rem;
   font-family: var(--ch-font-display);
-  font-weight: 400;
-  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-size: 1.15rem;
   color: var(--ch-text-on-ink);
   text-decoration: none;
   white-space: nowrap;

@@ -1,17 +1,17 @@
 interface CategoryStyle {
     className: string;
-    emoji: string;
+    label: string;
 }
 
 const CATEGORY_STYLES: Record<string, CategoryStyle> = {
-    talleres: { className: 'cover--talleres', emoji: '🛠️' },
-    deportes: { className: 'cover--deportes', emoji: '⚽' },
-    arte: { className: 'cover--arte', emoji: '🎨' },
-    networking: { className: 'cover--networking', emoji: '🤝' },
-    voluntariado: { className: 'cover--voluntariado', emoji: '🌱' },
+    talleres: { className: 'cover--talleres', label: 'Taller' },
+    deportes: { className: 'cover--deportes', label: 'Deporte' },
+    arte: { className: 'cover--arte', label: 'Arte' },
+    networking: { className: 'cover--networking', label: 'Networking' },
+    voluntariado: { className: 'cover--voluntariado', label: 'Voluntariado' },
 };
 
-const DEFAULT_STYLE: CategoryStyle = { className: 'cover--default', emoji: '🎉' };
+const DEFAULT_STYLE: CategoryStyle = { className: 'cover--default', label: 'Comunidad' };
 
 export function useCategoryStyle(categoryName?: string | null): CategoryStyle {
     if (!categoryName) return DEFAULT_STYLE;

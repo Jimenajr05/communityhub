@@ -223,8 +223,17 @@ async function eliminarActividad(actividad: any) {
           </thead>
           <tbody>
             <tr v-for="actividad in eventsStore.actividades" :key="actividad._id">
-              <td><NuxtLink :to="`/actividad/${actividad._id}`">{{ actividad.title }}</NuxtLink></td>
-              <td>{{ new Date(actividad.date).toLocaleDateString('es-CR') }}</td>
+              <td>
+                <NuxtLink :to="`/actividad/${actividad._id}`" class="activity-title-link">
+                  <strong>{{ actividad.title }}</strong>
+                </NuxtLink>
+              </td>
+              <td>
+                <span class="table-date">
+                  {{ new Date(actividad.date).toLocaleDateString('es-CR', { day: 'numeric', month: 'short', year: 'numeric' }) }}
+                </span>
+                <span v-if="actividad.time" class="table-time">· {{ actividad.time }}</span>
+              </td>
               <td>
                 <button
                   type="button"
@@ -232,29 +241,48 @@ async function eliminarActividad(actividad: any) {
                   :title="'Ver lista de inscritos (' + actividad.registeredCount + ')'"
                   @click="verParticipantes(actividad)"
                 >
-                  👥 {{ actividad.registeredCount }} participantes
+                  {{ actividad.registeredCount }} inscritos
                 </button>
               </td>
-              <td>{{ actividad.spotsAvailable }}</td>
-              <td>{{ actividad.status }}</td>
-              <td style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
-                <button type="button" class="pill-btn pill-btn--ghost" @click="verParticipantes(actividad)">
-                  Participantes
-                </button>
-                <button type="button" class="pill-btn pill-btn--ghost" @click="abrirEdicion(actividad)">
-                  Editar
-                </button>
-                <button
-                  v-if="actividad.status === 'active'"
-                  type="button"
-                  class="pill-btn pill-btn--danger"
-                  @click="cancelarActividad(actividad)"
-                >
-                  Cancelar
-                </button>
-                <button type="button" class="pill-btn pill-btn--danger" @click="eliminarActividad(actividad)">
-                  Eliminar
-                </button>
+              <td>
+                <span class="spots-count">
+                  {{ actividad.spotsAvailable }} <small>/ {{ actividad.capacity }}</small>
+                </span>
+              </td>
+              <td>
+                <span class="status-pill" :class="`status-pill--${actividad.status}`">
+                  <span class="status-dot" />
+                  {{ actividad.status === 'active' ? 'Activa' : actividad.status === 'cancelled' ? 'Cancelada' : 'Finalizada' }}
+                </span>
+              </td>
+              <td>
+                <div class="table-actions">
+                  <button
+                    type="button"
+                    class="action-pill action-pill--edit"
+                    title="Editar actividad"
+                    @click="abrirEdicion(actividad)"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    v-if="actividad.status === 'active'"
+                    type="button"
+                    class="action-pill action-pill--cancel"
+                    title="Cancelar actividad"
+                    @click="cancelarActividad(actividad)"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    class="action-pill action-pill--delete"
+                    title="Eliminar actividad"
+                    @click="eliminarActividad(actividad)"
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -332,13 +360,53 @@ async function eliminarActividad(actividad: any) {
 </template>
 
 <style scoped>
-.badge-btn {
-  background: rgba(36, 27, 78, 0.08);
-  border: 1px solid var(--ch-line);
-  padding: 0.25rem 0.6rem;
-  border-radius: 999px;
-  font-family: var(--ch-font-mono);
+.activity-title-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--ch-text-on-paper);
+  text-decoration: none;
+  font-size: 0.96rem;
+  transition: color 0.15s ease;
+}
+
+.activity-title-link:hover {
+  color: var(--ch-coral);
+}
+
+.activity-bullet {
+  font-size: 1.1rem;
+}
+
+.table-date {
+  font-weight: 500;
+  color: var(--ch-text-on-paper);
+  white-space: nowrap;
+}
+
+.table-time {
   font-size: 0.8rem;
+  color: var(--ch-text-on-paper-muted);
+}
+
+.spots-count {
+  font-weight: 600;
+  color: var(--ch-text-on-paper);
+}
+
+.spots-count small {
+  font-weight: 400;
+  color: var(--ch-text-on-paper-muted);
+}
+
+.badge-btn {
+  background: var(--ch-paper-2);
+  border: 1px solid var(--ch-line);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-family: var(--ch-font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
   color: var(--ch-text-on-paper);
   cursor: pointer;
   transition: all 0.15s ease;
@@ -349,6 +417,109 @@ async function eliminarActividad(actividad: any) {
   background: var(--ch-coral);
   color: #fff;
   border-color: var(--ch-coral);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--ch-font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+}
+
+.status-pill--active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.status-pill--active .status-dot {
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+}
+
+.status-pill--cancelled {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.status-pill--cancelled .status-dot {
+  background: #ef4444;
+}
+
+.status-pill--finished {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+}
+
+.status-pill--finished .status-dot {
+  background: #94a3b8;
+}
+
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+}
+
+.action-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  font-family: var(--ch-font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--ch-radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.action-pill--edit {
+  background: var(--ch-paper-2);
+  border-color: var(--ch-line);
+  color: var(--ch-text-on-paper);
+}
+
+.action-pill--edit:hover {
+  border-color: var(--ch-coral);
+  color: var(--ch-coral);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.action-pill--cancel {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.25);
+  color: #f59e0b;
+}
+
+.action-pill--cancel:hover {
+  background: #f59e0b;
+  color: #ffffff;
+}
+
+.action-pill--delete {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  padding: 0.35rem 0.55rem;
+}
+
+.action-pill--delete:hover {
+  background: #ef4444;
+  color: #ffffff;
 }
 
 .modal-backdrop {
