@@ -14,7 +14,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['reminder', 'update', 'cancellation', 'system'],
+      enum: ['reminder', 'update', 'cancellation', 'cancellation_user', 'registration', 'system'],
       default: 'system',
     },
     message: {

@@ -58,8 +58,8 @@ async function registerToEvent(userId, eventId) {
   await Notification.create({
     user: userId,
     event: eventId,
-    type: 'update',
-    message: `Te inscribiste en "${event.title}".`,
+    type: 'registration',
+    message: `Te inscribiste correctamente en "${event.title}".`,
   });
 
   return registration;
@@ -87,16 +87,20 @@ async function cancelRegistration(userId, eventId) {
   await Notification.create({
     user: userId,
     event: eventId,
-    type: 'update',
+    type: 'cancellation_user',
     message: `Cancelaste tu inscripción en "${event ? event.title : 'la actividad'}".`,
   });
 }
 
-async function getUserRegistrations(userId) {
-  const registrations = await Registration.find({
-    user: userId,
-    status: 'confirmed',
-  })
+async function getUserRegistrations(userId, statusFilter) {
+  // Sin filtro: devuelve el historial completo (confirmed + cancelled)
+  // Con ?status=confirmed o ?status=cancelled: filtra por estado
+  const query = { user: userId };
+  if (statusFilter && ['confirmed', 'cancelled'].includes(statusFilter)) {
+    query.status = statusFilter;
+  }
+
+  const registrations = await Registration.find(query)
     .sort({ createdAt: -1 })
     .populate({
       path: 'event',
