@@ -12,6 +12,25 @@ const editandoId = ref<string | null>(null);
 const guardando = ref(false);
 const errorFormulario = ref('');
 
+// Estado para visualización de participantes
+interface Participante {
+  _id: string;
+  user: {
+    _id?: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  status: string;
+  createdAt: string;
+}
+
+const mostrarParticipantes = ref(false);
+const actividadSeleccionada = ref<any>(null);
+const participantes = ref<Participante[]>([]);
+const cargandoParticipantes = ref(false);
+const errorParticipantes = ref('');
+
 const form = reactive({
   title: '',
   description: '',
@@ -58,6 +77,32 @@ function abrirEdicion(actividad: any) {
   mostrarFormulario.value = true;
 }
 
+async function verParticipantes(actividad: any) {
+  actividadSeleccionada.value = actividad;
+  mostrarParticipantes.value = true;
+  cargandoParticipantes.value = true;
+  errorParticipantes.value = '';
+  participantes.value = [];
+
+  try {
+    let res: any;
+    try {
+      res = await apiFetch<any>(`/events/${actividad._id}/participants`);
+    } catch {
+      res = await apiFetch<any>(`/events/${actividad._id}/registrations`);
+    }
+
+    const lista = res?.data?.participants || res?.data?.registrations || res?.data || [];
+    participantes.value = Array.isArray(lista) ? lista : [];
+  } catch (err: unknown) {
+    const fetchError = err as { data?: { message?: string } };
+    errorParticipantes.value =
+      fetchError?.data?.message || 'No pudimos cargar la lista de participantes.';
+  } finally {
+    cargandoParticipantes.value = false;
+  }
+}
+
 async function guardar() {
   guardando.value = true;
   errorFormulario.value = '';
@@ -98,14 +143,14 @@ async function eliminarActividad(actividad: any) {
       <header class="panel-header">
         <span class="panel-eyebrow">Organizador</span>
         <h1>Mis actividades</h1>
-        <p>Crea, edita y administra las actividades que organizas.</p>
+        <p>Crea, edita y administra las actividades que organizas y consulta tus participantes.</p>
       </header>
 
       <button type="button" class="pill-btn" style="margin-bottom: 1.5rem" @click="abrirCreacion">
         + Nueva actividad
       </button>
 
-      <div v-if="mostrarFormulario" class="panel-card">
+      <div v-if="mostrarFormulario" class="panel-card" style="margin-bottom: 2rem">
         <h2>{{ editandoId ? 'Editar actividad' : 'Nueva actividad' }}</h2>
         <form novalidate @submit.prevent="guardar">
           <div class="field">
@@ -173,18 +218,32 @@ async function eliminarActividad(actividad: any) {
               <th>Inscritos</th>
               <th>Cupo disponible</th>
               <th>Estado</th>
-              <th></th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="actividad in eventsStore.actividades" :key="actividad._id">
               <td><NuxtLink :to="`/actividad/${actividad._id}`">{{ actividad.title }}</NuxtLink></td>
               <td>{{ new Date(actividad.date).toLocaleDateString('es-CR') }}</td>
-              <td>{{ actividad.registeredCount }}</td>
+              <td>
+                <button
+                  type="button"
+                  class="badge-btn"
+                  :title="'Ver lista de inscritos (' + actividad.registeredCount + ')'"
+                  @click="verParticipantes(actividad)"
+                >
+                  👥 {{ actividad.registeredCount }} participantes
+                </button>
+              </td>
               <td>{{ actividad.spotsAvailable }}</td>
               <td>{{ actividad.status }}</td>
-              <td style="display: flex; gap: 0.4rem">
-                <button type="button" class="pill-btn pill-btn--ghost" @click="abrirEdicion(actividad)">Editar</button>
+              <td style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                <button type="button" class="pill-btn pill-btn--ghost" @click="verParticipantes(actividad)">
+                  Participantes
+                </button>
+                <button type="button" class="pill-btn pill-btn--ghost" @click="abrirEdicion(actividad)">
+                  Editar
+                </button>
                 <button
                   v-if="actividad.status === 'active'"
                   type="button"
@@ -201,6 +260,181 @@ async function eliminarActividad(actividad: any) {
           </tbody>
         </table>
       </div>
+
+      <!-- Modal de Participantes -->
+      <div v-if="mostrarParticipantes" class="modal-backdrop" @click="mostrarParticipantes = false">
+        <div class="modal-card panel-card" @click.stop>
+          <div class="modal-header">
+            <div>
+              <span class="panel-eyebrow">Lista de Asistencia</span>
+              <h2 class="modal-title">{{ actividadSeleccionada?.title }}</h2>
+              <p class="modal-subtitle">
+                Total inscritos: {{ actividadSeleccionada?.registeredCount }} / Capacidad: {{ actividadSeleccionada?.capacity }}
+              </p>
+            </div>
+            <button
+              type="button"
+              class="modal-close"
+              aria-label="Cerrar"
+              @click="mostrarParticipantes = false"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <p v-if="cargandoParticipantes" class="panel-empty">Cargando participantes…</p>
+            <p v-else-if="errorParticipantes" class="form-error">{{ errorParticipantes }}</p>
+            <p v-else-if="participantes.length === 0" class="panel-empty">
+              Aún no hay usuarios inscritos en esta actividad.
+            </p>
+
+            <div v-else class="data-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Participante</th>
+                    <th>Correo</th>
+                    <th>Fecha de inscripción</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="p in participantes" :key="p._id || p.user?._id">
+                    <td>
+                      <strong>{{ p.user?.firstName }} {{ p.user?.lastName }}</strong>
+                    </td>
+                    <td>{{ p.user?.email }}</td>
+                    <td>
+                      {{ p.createdAt ? new Date(p.createdAt).toLocaleDateString('es-CR') : 'Registrado' }}
+                    </td>
+                    <td>
+                      <span class="status-tag status-tag--confirmed">
+                        {{ p.status === 'confirmed' || !p.status ? 'Confirmado' : p.status }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="pill-btn pill-btn--ghost" @click="mostrarParticipantes = false">
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
+
+<style scoped>
+.badge-btn {
+  background: rgba(36, 27, 78, 0.08);
+  border: 1px solid var(--ch-line);
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-family: var(--ch-font-mono);
+  font-size: 0.8rem;
+  color: var(--ch-text-on-paper);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.badge-btn:hover {
+  background: var(--ch-coral);
+  color: #fff;
+  border-color: var(--ch-coral);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 99;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 44rem;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  position: relative;
+  border-radius: var(--ch-radius-md);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  border-bottom: 1px solid var(--ch-line);
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+
+.modal-title {
+  margin: 0.2rem 0;
+  font-size: 1.3rem;
+  color: var(--ch-text-on-paper);
+}
+
+.modal-subtitle {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ch-text-on-paper-muted);
+  font-family: var(--ch-font-mono);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: var(--ch-text-on-paper-muted);
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--ch-radius-sm);
+  transition: all 0.15s ease;
+}
+
+.modal-close:hover {
+  color: var(--ch-coral);
+  background: rgba(255, 107, 74, 0.1);
+}
+
+.modal-body {
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 0.25rem;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--ch-line);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.status-tag {
+  font-family: var(--ch-font-mono);
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #047857;
+}
+</style>
+
