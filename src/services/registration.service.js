@@ -125,9 +125,49 @@ async function getRegistrationStatus(userId, eventId) {
   return Boolean(registration);
 }
 
+async function getEventParticipants(eventId, requester) {
+  if (!mongoose.Types.ObjectId.isValid(eventId)) {
+    throw ApiError.notFound('Actividad no encontrada');
+  }
+
+  const event = await Event.findById(eventId);
+  if (!event) {
+    throw ApiError.notFound('Actividad no encontrada');
+  }
+
+  const isOwner = event.organizer.toString() === requester.id.toString();
+  const isAdmin = requester.role === 'administrador';
+  if (!isOwner && !isAdmin) {
+    throw ApiError.forbidden('Solo el organizador de este evento o un administrador pueden ver la lista de participantes');
+  }
+
+  const registrations = await Registration.find({
+    event: eventId,
+    status: 'confirmed',
+  })
+    .sort({ createdAt: -1 })
+    .populate('user', 'firstName lastName email profilePicture');
+
+  return {
+    event: {
+      id: event._id,
+      title: event.title,
+      capacity: event.capacity,
+      spotsAvailable: Math.max(event.capacity - registrations.length, 0),
+    },
+    totalParticipants: registrations.length,
+    participants: registrations.map((r) => ({
+      registrationId: r._id,
+      user: r.user,
+      registeredAt: r.createdAt,
+    })),
+  };
+}
+
 module.exports = {
   registerToEvent,
   cancelRegistration,
   getUserRegistrations,
   getRegistrationStatus,
+  getEventParticipants,
 };

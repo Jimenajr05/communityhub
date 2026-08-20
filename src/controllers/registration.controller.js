@@ -61,9 +61,25 @@ async function checkStatus(req, res, next) {
   }
 }
 
+async function getParticipants(req, res, next) {
+  try {
+    const data = await registrationService.getEventParticipants(
+      req.params.id,
+      req.user
+    );
+    res.json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   registerToEvent,
   cancelRegistration,
   getMyRegistrations,
   checkStatus,
+  getParticipants,
 };
