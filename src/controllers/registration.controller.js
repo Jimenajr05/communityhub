@@ -33,7 +33,10 @@ async function cancelRegistration(req, res, next) {
 
 async function getMyRegistrations(req, res, next) {
   try {
-    const registrations = await registrationService.getUserRegistrations(req.user.id);
+    const registrations = await registrationService.getUserRegistrations(
+      req.user.id,
+      req.query.status   // opcional: 'confirmed' | 'cancelled'
+    );
     res.json({
       success: true,
       data: { registrations },
