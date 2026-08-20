@@ -135,6 +135,7 @@ GET    /api/users/me/favorites        Mis favoritos (🔒)
 ```
 GET    /api/events               Listar actividades (público, con filtros)
 GET    /api/events/:id           Ver detalle (público)
+GET    /api/events/:id/participants Ver lista de participantes (🔒 owner/admin)
 POST   /api/events               Crear actividad (🔒 organizador/admin)
 PUT    /api/events/:id           Editar actividad (🔒 owner/admin)
 DELETE /api/events/:id           Eliminar actividad (🔒 owner/admin)
