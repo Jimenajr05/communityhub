@@ -27,7 +27,6 @@ const sinCupo = computed(() => props.actividad.spotsAvailable <= 0);
   <NuxtLink :to="`/actividad/${actividad._id}`" class="event-card">
     <div class="event-card__cover" :class="categoryStyle.className">
       <div class="event-card__cover-grid" aria-hidden="true" />
-      <span class="event-card__cover-emoji" aria-hidden="true">{{ categoryStyle.emoji }}</span>
 
       <span class="event-card__date-chip">
         <strong>{{ fechaCorta.dia }}</strong>
@@ -39,7 +38,7 @@ const sinCupo = computed(() => props.actividad.spotsAvailable <= 0);
 
     <div class="event-card__body">
       <h3 class="event-card__title">{{ actividad.title }}</h3>
-      <p class="event-card__meta">🕒 {{ actividad.time }} &nbsp;·&nbsp; 📍 {{ actividad.location }}</p>
+      <p class="event-card__meta">{{ actividad.time }} &nbsp;·&nbsp; {{ actividad.location }}</p>
 
       <div class="event-card__footer">
         <div class="event-card__capacity">

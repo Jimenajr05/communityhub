@@ -159,7 +159,7 @@ const sinCupo = computed(() => (actividad.value?.spotsAvailable ?? 0) <= 0);
 
             <button class="fav-btn" :class="{ 'fav-btn--active': esFavorito }" :disabled="procesandoAccion"
               @click="alternarFavorito" :title="esFavorito ? 'Quitar de favoritos' : 'Guardar en favoritos'">
-              {{ esFavorito ? '❤️ Favorito' : '🤍 Guardar' }}
+              {{ esFavorito ? 'Guardado' : 'Guardar' }}
             </button>
           </div>
 
@@ -172,7 +172,6 @@ const sinCupo = computed(() => (actividad.value?.spotsAvailable ?? 0) <= 0);
 
         <div class="activity-meta">
           <div class="meta-item">
-            <span class="meta-icon">📅</span>
             <div>
               <strong>Fecha y hora</strong>
               <p>{{ fechaFormateada }} a las {{ actividad.time }}</p>
@@ -180,7 +179,6 @@ const sinCupo = computed(() => (actividad.value?.spotsAvailable ?? 0) <= 0);
           </div>
 
           <div class="meta-item">
-            <span class="meta-icon">📍</span>
             <div>
               <strong>Ubicación</strong>
               <p>{{ actividad.location }}</p>
@@ -188,7 +186,6 @@ const sinCupo = computed(() => (actividad.value?.spotsAvailable ?? 0) <= 0);
           </div>
 
           <div class="meta-item">
-            <span class="meta-icon">👤</span>
             <div>
               <strong>Organizador</strong>
               <p>{{ actividad.organizer?.firstName }} {{ actividad.organizer?.lastName }}</p>
@@ -196,7 +193,6 @@ const sinCupo = computed(() => (actividad.value?.spotsAvailable ?? 0) <= 0);
           </div>
 
           <div class="meta-item">
-            <span class="meta-icon">🎟️</span>
             <div>
               <strong>Cupos disponibles</strong>
               <p :class="{ 'spots--full': sinCupo }">

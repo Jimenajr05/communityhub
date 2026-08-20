@@ -6,7 +6,6 @@ const { isOnline } = useOnlineStatus();
   <Transition name="slide-banner">
     <div v-if="!isOnline" class="offline-banner" role="status" aria-live="polite">
       <div class="offline-banner__content">
-        <span class="offline-icon">📶⚡</span>
         <div>
           <strong>Sin conexión a Internet (Modo Offline)</strong>
           <p>Estás navegando con la versión en caché de la PWA. Algunas funciones interactivas como la inscripción requieren conexión.</p>
