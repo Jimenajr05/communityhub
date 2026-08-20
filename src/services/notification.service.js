@@ -8,7 +8,7 @@ async function getUserNotifications(userId) {
     .populate('event', 'title date location');
 }
 
-async function markAsRead(notificationId, userId) {
+async function markAsRead(notificationId, userId, explicitRead) {
   if (!mongoose.Types.ObjectId.isValid(notificationId)) {
     throw ApiError.notFound('Notificación no encontrada');
   }
@@ -18,7 +18,7 @@ async function markAsRead(notificationId, userId) {
     throw ApiError.notFound('Notificación no encontrada');
   }
 
-  notification.read = true;
+  notification.read = explicitRead !== undefined ? Boolean(explicitRead) : true;
   await notification.save();
   await notification.populate('event', 'title date location');
   return notification;
