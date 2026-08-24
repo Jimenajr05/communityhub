@@ -4,6 +4,8 @@
   solicitada originalmente (query "redirect") o a la página de inicio.
 -->
 <script setup lang="ts">
+import { Eye, EyeOff, ArrowRight } from 'lucide-vue-next';
+
 useHead({ title: 'Iniciar sesión · CommunityHub' });
 
 const email = ref(''); // Correo ingresado en el formulario
@@ -66,7 +68,7 @@ async function onSubmit() {
               v-model.trim="email"
               type="email"
               autocomplete="email"
-              placeholder=""
+              placeholder="tu-correo@ejemplo.com"
               :disabled="cargando"
             />
           </div>
@@ -88,7 +90,8 @@ async function onSubmit() {
                 :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
                 @click="showPassword = !showPassword"
               >
-                {{ showPassword ? 'Ocultar' : 'Ver' }}
+                <EyeOff v-if="showPassword" :size="16" :stroke-width="2" />
+                <Eye v-else :size="16" :stroke-width="2" />
               </button>
             </div>
           </div>
@@ -96,7 +99,7 @@ async function onSubmit() {
           <p v-if="errorMessage" class="form-error" role="alert">{{ errorMessage }}</p>
 
           <button type="submit" class="submit-btn" :disabled="cargando || !isFormValid">
-            <span v-if="!cargando">Iniciar sesión</span>
+            <span v-if="!cargando">Iniciar sesión <ArrowRight :size="15" :stroke-width="2.2" style="vertical-align: middle; margin-left: 0.3rem;" /></span>
             <span v-else>Entrando…</span>
           </button>
 

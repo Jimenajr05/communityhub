@@ -1,31 +1,40 @@
 <!--
   Página "Centro de notificaciones" (ruta "/notificaciones", requiere autenticación).
-  Muestra las notificaciones del usuario (recordatorios, inscripciones,
-  actualizaciones, etc.), permite filtrarlas, marcarlas como leídas y eliminarlas.
+  Muestra las notificaciones en tiempo real, recordatorios y confirmaciones.
 -->
 <script setup lang="ts">
+import {
+  Check,
+  X,
+  RadioTower,
+  BellRing,
+  RotateCw,
+  Clock,
+  Ticket,
+  CalendarCheck2,
+  AlertCircle,
+  Sparkles,
+  Layers,
+} from 'lucide-vue-next';
 import type { Notificacion } from '~/stores/notifications';
 
 definePageMeta({ middleware: 'auth' });
-useHead({ title: 'Notificaciones · CommunityHub' });
+useHead({ title: 'Centro de Notificaciones · CommunityHub' });
 
 const notificationsStore = useNotificationsStore();
-const filtroActivo = ref<'todas' | 'sin_leer' | 'reminder' | 'registration'>('todas'); // Filtro de categoría seleccionado
-const refrescando = ref(false); // Indica si se está refrescando manualmente el listado
+const filtroActivo = ref<'todas' | 'sin_leer' | 'reminder' | 'registration'>('todas');
+const refrescando = ref(false);
 
-// Al montar la página, carga las notificaciones del usuario autenticado.
 onMounted(async () => {
   await notificationsStore.obtenerNotificaciones();
 });
 
-/** Vuelve a cargar las notificaciones desde la API. */
 async function refrescar() {
   refrescando.value = true;
   await notificationsStore.obtenerNotificaciones();
   refrescando.value = false;
 }
 
-// Notificaciones visibles según el filtro activo (todas, sin leer, o por tipo).
 const notificacionesFiltradas = computed(() => {
   if (filtroActivo.value === 'sin_leer') {
     return notificationsStore.notificaciones.filter((n) => !n.isRead);
@@ -39,41 +48,22 @@ const notificacionesFiltradas = computed(() => {
   return notificationsStore.notificaciones;
 });
 
-/** Devuelve un código corto identificando el tipo de notificación (usado como icono textual). */
-function obtenerIcono(tipo: string): string {
-  switch (tipo) {
-    case 'reminder':
-      return 'REM';
-    case 'registration':
-      return 'INS';
-    case 'event_update':
-      return 'ACT';
-    case 'report':
-      return 'REP';
-    case 'system':
-    default:
-      return 'NOT';
-  }
-}
-
-/** Devuelve la etiqueta legible en español para un tipo de notificación. */
 function obtenerEtiquetaTipo(tipo: string): string {
   switch (tipo) {
     case 'reminder':
-      return 'Recordatorio';
+      return 'Recordatorio de actividad';
     case 'registration':
-      return 'Inscripción Confirmada';
+      return 'Inscripción confirmada';
     case 'event_update':
-      return 'Actualización';
+      return 'Actualización de evento';
     case 'report':
-      return 'Reporte Serverless';
+      return 'Reporte comunitario';
     case 'system':
     default:
-      return 'Sistema';
+      return 'Aviso del sistema';
   }
 }
 
-/** Formatea una fecha ISO en un texto relativo/legible ("Hoy a las..." o fecha corta). */
 function formatearFecha(fechaIso: string): string {
   if (!fechaIso) return '';
   const fecha = new Date(fechaIso);
@@ -86,24 +76,15 @@ function formatearFecha(fechaIso: string): string {
   return `${fecha.toLocaleDateString('es-CR', { day: 'numeric', month: 'short' })} · ${fecha.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
-/**
- * Marca una notificación individual como leída (si aún no lo estaba).
- * @param notif Notificación a marcar.
- */
 async function marcarLeida(notif: Notificacion) {
   if (notif.isRead) return;
   await notificationsStore.marcarLeida(notif._id);
 }
 
-/** Marca todas las notificaciones del usuario como leídas. */
 async function marcarTodas() {
   await notificationsStore.marcarTodasLeidas();
 }
 
-/**
- * Elimina una notificación.
- * @param id Identificador de la notificación a eliminar.
- */
 async function eliminar(id: string) {
   await notificationsStore.eliminarNotificacion(id);
 }
@@ -113,18 +94,17 @@ async function eliminar(id: string) {
   <div class="panel-page">
     <div class="panel-container">
 
+      <!-- CABECERA DEL CENTRO DE NOTIFICACIONES -->
       <header class="notif-hero panel-card">
         <div class="notif-hero__info">
-          <div>
-            <div class="notif-hero__badge">
-              <span class="pulse-dot" />
-              Notificaciones en tiempo real
-            </div>
-            <h1 class="notif-hero__title">Centro de Notificaciones</h1>
-            <p class="notif-hero__desc">
-              Avisos de eventos, confirmaciones de cupo y recordatorios serverless procesados por AWS Lambda.
-            </p>
+          <div class="notif-hero__badge">
+            <RadioTower :size="13" :stroke-width="2.2" />
+            <span>Señal en tiempo real · Serveless AWS Lambda</span>
           </div>
+          <h1 class="notif-hero__title">Centro de Avisos y Notificaciones</h1>
+          <p class="notif-hero__desc">
+            Confirmaciones de cupo, recordatorios automáticos de tus actividades y avisos de la comunidad.
+          </p>
         </div>
 
         <div class="notif-hero__actions">
@@ -134,99 +114,80 @@ async function eliminar(id: string) {
             :disabled="refrescando"
             @click="refrescar"
           >
-            {{ refrescando ? 'Actualizando…' : 'Actualizar' }}
+            <RotateCw :size="14" :stroke-width="2.2" :class="{ 'spin-anim': refrescando }" />
+            <span>{{ refrescando ? 'Actualizando...' : 'Actualizar' }}</span>
           </button>
+
           <button
             v-if="notificationsStore.sinLeerCount > 0"
             type="button"
             class="pill-btn pill-btn--primary"
             @click="marcarTodas"
           >
-            Marcar todas como leídas
+            <Check :size="15" :stroke-width="2.4" /> Marcar todas leídas
           </button>
         </div>
       </header>
 
-      <div class="segmented-tabs-wrapper">
-        <div class="segmented-tabs">
-          <button
-            type="button"
-            class="tab-btn"
-            :class="{ 'tab-btn--active': filtroActivo === 'todas' }"
-            @click="filtroActivo = 'todas'"
-          >
-            Todas
-            <span class="tab-count">{{ notificationsStore.notificaciones.length }}</span>
-          </button>
+      <!-- PESTAÑAS DE FILTRO SEGMENTADAS -->
+      <div class="tabs-bar">
+        <button
+          type="button"
+          class="tab-pill"
+          :class="{ 'tab-pill--active': filtroActivo === 'todas' }"
+          @click="filtroActivo = 'todas'"
+        >
+          Todas
+          <span class="tab-count">{{ notificationsStore.notificaciones.length }}</span>
+        </button>
 
-          <button
-            type="button"
-            class="tab-btn"
-            :class="{ 'tab-btn--active': filtroActivo === 'sin_leer' }"
-            @click="filtroActivo = 'sin_leer'"
-          >
-            Sin leer
-            <span v-if="notificationsStore.sinLeerCount > 0" class="tab-count tab-count--alert">
-              {{ notificationsStore.sinLeerCount }}
-            </span>
-            <span v-else class="tab-count">0</span>
-          </button>
+        <button
+          type="button"
+          class="tab-pill"
+          :class="{ 'tab-pill--active': filtroActivo === 'sin_leer' }"
+          @click="filtroActivo = 'sin_leer'"
+        >
+          Sin leer
+          <span v-if="notificationsStore.sinLeerCount > 0" class="tab-count tab-count--alert">
+            {{ notificationsStore.sinLeerCount }}
+          </span>
+          <span v-else class="tab-count">0</span>
+        </button>
 
-          <button
-            type="button"
-            class="tab-btn"
-            :class="{ 'tab-btn--active': filtroActivo === 'reminder' }"
-            @click="filtroActivo = 'reminder'"
-          >
-            Recordatorios
-          </button>
+        <button
+          type="button"
+          class="tab-pill"
+          :class="{ 'tab-pill--active': filtroActivo === 'reminder' }"
+          @click="filtroActivo = 'reminder'"
+        >
+          Recordatorios
+        </button>
 
-          <button
-            type="button"
-            class="tab-btn"
-            :class="{ 'tab-btn--active': filtroActivo === 'registration' }"
-            @click="filtroActivo = 'registration'"
-          >
-            Inscripciones
-          </button>
-        </div>
+        <button
+          type="button"
+          class="tab-pill"
+          :class="{ 'tab-pill--active': filtroActivo === 'registration' }"
+          @click="filtroActivo = 'registration'"
+        >
+          Inscripciones
+        </button>
       </div>
 
-      <div v-if="notificationsStore.cargando" class="panel-empty">
-        Consultando notificaciones en la plataforma…
+      <!-- ESTADO DE CARGA -->
+      <p v-if="notificationsStore.cargando" class="panel-empty">Consultando avisos en la red...</p>
+
+      <!-- ESTADO VACÍO -->
+      <div v-else-if="notificacionesFiltradas.length === 0" class="panel-card empty-card">
+        <svg class="empty-card__glyph" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="1.6" stroke-dasharray="4 6" opacity="0.35" />
+          <path d="M32 18 C25 18 20 23 20 30 C20 38 16 42 16 42 H48 C48 42 44 38 44 30 C44 23 39 18 32 18 Z" stroke="currentColor" stroke-width="1.8" />
+          <circle cx="32" cy="48" r="3" fill="var(--ch-marigold)" />
+        </svg>
+        <h3>No tienes notificaciones en esta sección</h3>
+        <p>Los recordatorios de actividades, cambios de horario y confirmaciones de cupos aparecerán aquí.</p>
       </div>
 
-      <div
-        v-else-if="notificacionesFiltradas.length === 0"
-        class="panel-card empty-state"
-      >
-        <h3 class="empty-state__title">
-          {{ filtroActivo === 'sin_leer' ? '¡Estás al día! No hay notificaciones sin leer' : 'No hay notificaciones en esta sección' }}
-        </h3>
-        <p class="empty-state__desc">
-          Cuando te inscribas a una actividad comunitaria o se ejecuten procesos automatizados de AWS Lambda, recibirás aquí todos los avisos y recordatorios.
-        </p>
-
-        <div class="empty-state__tips">
-          <div class="tip-card">
-            <div>
-              <strong>Inscripciones</strong>
-              <p>Confirmación inmediata de tus cupos reservados.</p>
-            </div>
-          </div>
-          <div class="tip-card">
-            <div>
-              <strong>AWS Lambda</strong>
-              <p>Recordatorios serverless automáticos antes del inicio.</p>
-            </div>
-          </div>
-        </div>
-
-        <NuxtLink to="/actividades" class="pill-btn pill-btn--primary" style="margin-top: 0.5rem;">
-          Explorar actividades comunitarias
-        </NuxtLink>
-      </div>
-
+      <!-- LISTA DE NOTIFICACIONES -->
       <div v-else class="notif-list">
         <article
           v-for="notif in notificacionesFiltradas"
@@ -235,46 +196,37 @@ async function eliminar(id: string) {
           :class="{ 'notif-item--unread': !notif.isRead }"
           @click="marcarLeida(notif)"
         >
-          <div class="notif-item__content">
-            <div class="notif-item__header">
-              <div class="notif-item__tags">
-                <span class="notif-type-tag" :class="`notif-type-tag--${notif.type}`">
-                  {{ obtenerEtiquetaTipo(notif.type) }}
-                </span>
-                <span v-if="!notif.isRead" class="unread-pill">
-                  ● Nueva
-                </span>
-              </div>
-              <time class="notif-item__time">{{ formatearFecha(notif.createdAt) }}</time>
+          <div class="notif-item__icon-wrap" :class="`notif-icon--${notif.type || 'system'}`">
+            <CalendarCheck2 v-if="notif.type === 'reminder'" :size="18" :stroke-width="2" />
+            <Ticket v-else-if="notif.type === 'registration'" :size="18" :stroke-width="2" />
+            <AlertCircle v-else-if="notif.type === 'event_update'" :size="18" :stroke-width="2" />
+            <BellRing v-else :size="18" :stroke-width="2" />
+          </div>
+
+          <div class="notif-item__body">
+            <div class="notif-item__top">
+              <span class="notif-item__type-tag">{{ obtenerEtiquetaTipo(notif.type) }}</span>
+              <span class="notif-item__time">{{ formatearFecha(notif.createdAt) }}</span>
             </div>
 
-            <h3 class="notif-item__title">{{ notif.title }}</h3>
             <p class="notif-item__message">{{ notif.message }}</p>
 
-            <div v-if="notif.event?._id" class="notif-item__event">
-              <NuxtLink :to="`/actividad/${notif.event._id}`" class="event-chip" @click.stop>
-                Actividad: <strong>{{ notif.event.title || 'Ver detalles' }}</strong> →
+            <div v-if="notif.event" class="notif-item__event-link">
+              <NuxtLink :to="`/actividad/${notif.event._id || notif.event}`" class="event-ref">
+                Ver actividad relacionada →
               </NuxtLink>
             </div>
           </div>
 
           <div class="notif-item__actions" @click.stop>
-            <button
-              v-if="!notif.isRead"
-              type="button"
-              class="action-circle-btn"
-              title="Marcar como leída"
-              @click="marcarLeida(notif)"
-            >
-              ✓
-            </button>
+            <span v-if="!notif.isRead" class="unread-dot" title="Aviso no leído" />
             <button
               type="button"
-              class="action-circle-btn action-circle-btn--delete"
+              class="notif-delete-btn"
               title="Eliminar notificación"
               @click="eliminar(notif._id)"
             >
-              ✕
+              <X :size="14" :stroke-width="2.2" />
             </button>
           </div>
         </article>
@@ -286,212 +238,137 @@ async function eliminar(id: string) {
 
 <style scoped>
 .notif-hero {
-  margin-bottom: 1.75rem;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
   gap: 1.5rem;
-  flex-wrap: wrap;
-  border: 1px solid var(--ch-line);
-  background: linear-gradient(135deg, rgba(18, 26, 44, 0.95) 0%, rgba(25, 36, 59, 0.95) 100%);
-}
-
-.notif-hero__info {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-}
-
-.notif-hero__icon {
-  width: 3.75rem;
-  height: 3.75rem;
-  border-radius: var(--ch-radius-md);
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.25) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.75rem;
-  flex-shrink: 0;
-  box-shadow: 0 8px 16px -4px rgba(99, 102, 241, 0.2);
+  margin-bottom: 2rem;
+  padding: 2rem 2.25rem;
 }
 
 .notif-hero__badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   font-family: var(--ch-font-mono);
-  font-size: 0.76rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 0.74rem;
   font-weight: 600;
-  color: var(--ch-coral);
-  background: rgba(99, 102, 241, 0.08);
-  padding: 0.2rem 0.65rem;
-  border-radius: 999px;
-  margin-bottom: 0.35rem;
-}
-
-.pulse-dot {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ch-marigold);
+  margin-bottom: 0.45rem;
 }
 
 .notif-hero__title {
-  margin: 0;
-  font-size: 1.65rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--ch-text-on-paper);
+  font-size: 1.75rem;
+  margin: 0 0 0.35rem;
+  color: #ffffff;
 }
 
 .notif-hero__desc {
-  margin: 0.2rem 0 0;
-  color: var(--ch-text-on-paper-muted);
-  font-size: 0.9rem;
-  max-width: 32rem;
+  margin: 0;
+  color: var(--ch-text-on-ink-muted);
+  font-size: 0.94rem;
 }
 
 .notif-hero__actions {
   display: flex;
-  gap: 0.65rem;
+  align-items: center;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
-.segmented-tabs-wrapper {
+.spin-anim {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Pestañas de filtro */
+.tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   margin-bottom: 1.75rem;
-}
-
-.segmented-tabs {
-  display: inline-flex;
-  gap: 0.35rem;
-  padding: 0.35rem;
-  background: rgba(17, 24, 39, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 999px;
-  backdrop-filter: blur(8px);
   flex-wrap: wrap;
 }
 
-.tab-btn {
+.tab-pill {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+  font-family: var(--ch-font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
   padding: 0.45rem 1rem;
-  border-radius: 999px;
-  background: transparent;
-  border: none;
-  font-family: var(--ch-font-body);
-  font-size: 0.86rem;
-  font-weight: 600;
+  border-radius: var(--ch-radius-full);
+  border: 1px solid var(--ch-line-strong);
+  background: rgba(15, 21, 40, 0.7);
   color: var(--ch-text-on-ink-muted);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.tab-btn:hover {
-  color: var(--ch-text-on-ink);
-  background: rgba(255, 255, 255, 0.06);
+.tab-pill:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
 }
 
-.tab-btn--active {
+.tab-pill--active {
   background: var(--ch-coral) !important;
+  border-color: var(--ch-coral) !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+  font-weight: 600;
+  box-shadow: 0 2px 10px var(--ch-coral-glow);
 }
 
 .tab-count {
+  font-size: 0.7rem;
   font-family: var(--ch-font-mono);
-  font-size: 0.72rem;
+  background: rgba(255, 255, 255, 0.1);
   padding: 0.1rem 0.45rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.15);
-  color: inherit;
+  border-radius: var(--ch-radius-full);
 }
 
 .tab-count--alert {
-  background: #f43f5e;
-  color: #fff;
+  background: var(--ch-marigold);
+  color: #04060c;
+  font-weight: 700;
 }
 
-.empty-state {
+/* Estado vacío */
+.empty-card {
   text-align: center;
-  padding: 3.5rem 2rem;
+  padding: 4rem 2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  border: 1px solid var(--ch-line);
+  gap: 0.75rem;
 }
 
-.empty-state__icon-box {
-  width: 4.5rem;
-  height: 4.5rem;
-  border-radius: 50%;
-  background: var(--ch-paper-2);
-  border: 1px dashed var(--ch-line);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  margin-bottom: 1.25rem;
+.empty-card__glyph {
+  width: 3.5rem;
+  height: 3.5rem;
+  color: var(--ch-coral-light);
+  margin-bottom: 0.5rem;
 }
 
-.empty-state__title {
-  margin: 0 0 0.5rem;
+.empty-card h3 {
   font-size: 1.35rem;
-  font-weight: 700;
-  color: var(--ch-text-on-paper);
+  margin: 0;
+  color: #ffffff;
 }
 
-.empty-state__desc {
-  margin: 0 0 2rem;
+.empty-card p {
   color: var(--ch-text-on-paper-muted);
   max-width: 28rem;
-  font-size: 0.92rem;
-  line-height: 1.5;
-}
-
-.empty-state__tips {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-  gap: 1rem;
-  width: 100%;
-  max-width: 32rem;
-  margin-bottom: 2rem;
-}
-
-.tip-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: var(--ch-paper-2);
-  border-radius: var(--ch-radius-sm);
-  border: 1px solid var(--ch-line);
-  text-align: left;
-}
-
-.tip-icon {
-  font-size: 1.35rem;
-  line-height: 1;
-}
-
-.tip-card strong {
-  display: block;
-  font-size: 0.85rem;
-  color: var(--ch-text-on-paper);
-  margin-bottom: 0.15rem;
-}
-
-.tip-card p {
   margin: 0;
-  font-size: 0.78rem;
-  color: var(--ch-text-on-paper-muted);
-  line-height: 1.35;
 }
 
+/* Lista de notificaciones */
 .notif-list {
   display: flex;
   flex-direction: column;
@@ -499,182 +376,141 @@ async function eliminar(id: string) {
 }
 
 .notif-item {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 1.25rem;
+  display: flex;
   align-items: flex-start;
-  padding: 1.25rem 1.4rem;
-  border: 1px solid var(--ch-line);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-  position: relative;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  transition: all 0.2s ease;
   cursor: pointer;
 }
 
 .notif-item:hover {
-  transform: translateY(-2px);
-  border-color: var(--ch-coral);
-  box-shadow: 0 12px 25px -8px rgba(0, 0, 0, 0.15);
+  border-color: var(--ch-line-strong);
+  background: var(--ch-paper-2);
 }
 
 .notif-item--unread {
-  border-left: 4px solid var(--ch-coral);
-  background: var(--ch-paper-2);
-  box-shadow: 0 4px 15px -4px rgba(99, 102, 241, 0.2);
+  border-left: 3px solid var(--ch-coral);
+  background: linear-gradient(90deg, rgba(124, 92, 252, 0.08) 0%, var(--ch-paper) 40%);
 }
 
 .notif-item__icon-wrap {
-  width: 2.85rem;
-  height: 2.85rem;
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: var(--ch-radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.35rem;
   flex-shrink: 0;
 }
 
-.notif-item__icon-wrap--reminder {
-  background: rgba(245, 158, 11, 0.12);
+.notif-icon--reminder {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--ch-marigold);
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.notif-item__icon-wrap--registration {
-  background: rgba(99, 102, 241, 0.12);
+.notif-icon--registration {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--ch-leaf);
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
-.notif-item__icon-wrap--event_update {
-  background: rgba(6, 182, 212, 0.12);
+.notif-icon--event_update {
+  background: rgba(124, 92, 252, 0.15);
+  color: var(--ch-coral-light);
+  border: 1px solid rgba(124, 92, 252, 0.3);
 }
 
-.notif-item__icon-wrap--report {
-  background: rgba(16, 185, 129, 0.12);
-}
-
-.notif-item__content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.notif-item__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.notif-item__tags {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.notif-type-tag {
-  font-family: var(--ch-font-mono);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 600;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  background: var(--ch-paper-2);
-  border: 1px solid var(--ch-line);
+.notif-icon--system {
+  background: rgba(148, 163, 184, 0.15);
   color: var(--ch-text-on-paper-muted);
+  border: 1px solid var(--ch-line-strong);
 }
 
-.unread-pill {
+.notif-item__body {
+  flex: 1;
+}
+
+.notif-item__top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.notif-item__type-tag {
   font-family: var(--ch-font-mono);
   font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   font-weight: 700;
-  color: var(--ch-coral);
+  color: #ffffff;
 }
 
 .notif-item__time {
-  font-family: var(--ch-font-mono);
   font-size: 0.76rem;
-  color: var(--ch-text-on-paper-muted);
-}
-
-.notif-item__title {
-  margin: 0.15rem 0 0;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--ch-text-on-paper);
+  font-family: var(--ch-font-mono);
+  color: var(--ch-text-on-paper-dim);
 }
 
 .notif-item__message {
-  margin: 0;
-  font-size: 0.92rem;
+  margin: 0 0 0.4rem;
+  font-size: 0.94rem;
+  color: var(--ch-text-on-paper);
   line-height: 1.5;
-  color: var(--ch-text-on-paper-muted);
 }
 
-.notif-item__event {
-  margin-top: 0.45rem;
-}
-
-.event-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.84rem;
-  color: var(--ch-coral);
+.event-ref {
+  font-family: var(--ch-font-mono);
+  font-size: 0.8rem;
+  color: var(--ch-coral-light);
   text-decoration: none;
-  padding: 0.3rem 0.7rem;
-  border-radius: var(--ch-radius-sm);
-  background: rgba(99, 102, 241, 0.08);
-  border: 1px solid rgba(99, 102, 241, 0.15);
-  transition: all 0.15s ease;
 }
 
-.event-chip:hover {
-  background: rgba(99, 102, 241, 0.16);
-  border-color: var(--ch-coral);
+.event-ref:hover {
+  text-decoration: underline;
 }
 
 .notif-item__actions {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  align-items: center;
+  gap: 0.6rem;
 }
 
-.action-circle-btn {
-  background: var(--ch-paper-2);
-  border: 1px solid var(--ch-line);
+.unread-dot {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  width: 2rem;
-  height: 2rem;
+  background: var(--ch-coral);
+  box-shadow: 0 0 8px var(--ch-coral-glow);
+}
+
+.notif-delete-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--ch-line-strong);
+  color: var(--ch-text-on-paper-muted);
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 50%;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.82rem;
-  color: var(--ch-text-on-paper);
-  cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.action-circle-btn:hover {
-  border-color: var(--ch-coral);
-  color: var(--ch-coral);
-  background: rgba(99, 102, 241, 0.08);
+.notif-delete-btn:hover {
+  background: rgba(244, 63, 94, 0.15);
+  border-color: var(--ch-rose);
+  color: var(--ch-rose);
 }
 
-.action-circle-btn--delete:hover {
-  border-color: var(--ch-error);
-  color: var(--ch-error);
-  background: rgba(239, 68, 68, 0.08);
-}
-
-@media (max-width: 640px) {
+@media (max-width: 780px) {
   .notif-hero {
     flex-direction: column;
     align-items: flex-start;
-  }
-  .notif-item {
-    grid-template-columns: 1fr auto;
-  }
-  .notif-item__icon-wrap {
-    display: none;
+    padding: 1.5rem;
   }
 }
 </style>
