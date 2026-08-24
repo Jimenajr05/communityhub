@@ -1,10 +1,10 @@
-# 🎟️ CommunityHub — Frontend
+# CommunityHub — Frontend
 
 Aplicación web moderna y progresiva (**PWA**) para la gestión y participación en actividades comunitarias y eventos. Construida con **Nuxt 4 / Vue 3**, **TypeScript** y **Pinia**, consumida exclusivamente a través de la API REST del backend (Express.js).
 
 ---
 
-## 🌟 Características Principales
+## Características Principales
 
 ### 1. Autenticación y Autorización
 * **Registro e Inicio de Sesión:** Validación reactiva de formularios y almacenamiento de JWT mediante cookies y store de Pinia.
@@ -45,7 +45,7 @@ Aplicación web moderna y progresiva (**PWA**) para la gestión y participación
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
+## Tecnologías Utilizadas
 
 * **Framework:** [Nuxt 4](https://nuxt.com/) (Vue 3 + Composition API + Script Setup)
 * **Lenguaje:** [TypeScript](https://www.typescriptlang.org/)
@@ -55,7 +55,7 @@ Aplicación web moderna y progresiva (**PWA**) para la gestión y participación
 
 ---
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 communityhub-frontend/
@@ -114,7 +114,7 @@ communityhub-frontend/
 
 ---
 
-## 🚀 Instalación y Ejecución Local
+## Instalación y Ejecución Local
 
 ### Prerrequisitos
 * Node.js v18 o superior.
@@ -147,7 +147,7 @@ communityhub-frontend/
 
 ---
 
-## 📱 Probar la Progressive Web App (PWA)
+## Probar la Progressive Web App (PWA)
 
 1. **Construir y previsualizar en producción:**
    ```bash
@@ -164,7 +164,7 @@ communityhub-frontend/
 
 ---
 
-## 🎬 Flujo de Demostración Final
+## Flujo de Demostración Final
 
 Para la presentación del proyecto, se recomienda seguir este flujo completo:
 
@@ -179,6 +179,6 @@ Para la presentación del proyecto, se recomienda seguir este flujo completo:
 
 ---
 
-## 📄 Licencia
+## Licencia
 
 Este proyecto está distribuido bajo la licencia **MIT**. Consulta el archivo [LICENSE](./LICENSE) para más información.

@@ -231,7 +231,7 @@ exports.reportHandler = async (event, context) => {
 
     // Texto legible del reporte que se guarda como mensaje de la notificación
     const summary =
-      `📊 Reporte CommunityHub — ${totalUsers} usuarios (${totalOrganizers} organizadores), ` +
+      `Reporte CommunityHub — ${totalUsers} usuarios (${totalOrganizers} organizadores), ` +
       `${totalEvents} actividades (${activeEvents} activas, ${finishedEvents} finalizadas), ` +
       `${totalRegistrations} inscripciones confirmadas.` +
       (mostPopularEvent ? ` Actividad más popular: "${mostPopularEvent.title}".` : '') +

@@ -157,10 +157,10 @@ async function seed() {
     });
 
     console.log('Inscripción y favorito de prueba creados exitosamente.');
-    console.log('✅ Poblamiento de base de datos completado.');
+    console.log('Poblamiento de base de datos completado.');
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error al poblar la base de datos:', error);
+    console.error('Error al poblar la base de datos:', error);
     process.exit(1);
   }
 }

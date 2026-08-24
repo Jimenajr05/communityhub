@@ -115,20 +115,20 @@ Copiar `.env.example` como `.env` y completar los valores:
 ```
 POST   /api/auth/register     Registrar usuario
 POST   /api/auth/login        Iniciar sesión
-GET    /api/auth/me           Usuario actual (🔒)
-POST   /api/auth/logout       Cerrar sesión (🔒)
+GET    /api/auth/me           Usuario actual (auth)
+POST   /api/auth/logout       Cerrar sesión (auth)
 ```
 
 ### Usuarios
 
 ```
-GET    /api/users                     Listar usuarios (🔒 admin)
-GET    /api/users/:id                 Ver perfil (🔒)
-PUT    /api/users/:id                 Editar perfil (🔒)
-DELETE /api/users/:id                 Eliminar usuario (🔒 admin)
-GET    /api/users/me/registrations    Mis inscripciones (🔒)
-GET    /api/users/me/favorites        Mis favoritos (🔒)
-POST   /api/users/me/avatar           Subir foto de perfil (multipart/form-data: avatar) (🔒)
+GET    /api/users                     Listar usuarios (auth admin)
+GET    /api/users/:id                 Ver perfil (auth)
+PUT    /api/users/:id                 Editar perfil (auth)
+DELETE /api/users/:id                 Eliminar usuario (auth admin)
+GET    /api/users/me/registrations    Mis inscripciones (auth)
+GET    /api/users/me/favorites        Mis favoritos (auth)
+POST   /api/users/me/avatar           Subir foto de perfil (multipart/form-data: avatar) (auth)
 ```
 
 ### Actividades
@@ -136,16 +136,16 @@ POST   /api/users/me/avatar           Subir foto de perfil (multipart/form-data:
 ```
 GET    /api/events               Listar actividades (público, con filtros)
 GET    /api/events/:id           Ver detalle (público)
-GET    /api/events/:id/participants Ver lista de participantes (🔒 owner/admin)
-POST   /api/events               Crear actividad (🔒 organizador/admin)
-PUT    /api/events/:id           Editar actividad (🔒 owner/admin)
-DELETE /api/events/:id           Eliminar actividad (🔒 owner/admin)
-POST   /api/events/:id/register  Inscribirse (🔒)
-DELETE /api/events/:id/register  Cancelar inscripción (🔒)
-GET    /api/events/:id/register/status  Estado de inscripción (🔒)
-POST   /api/events/:id/favorite  Agregar favorito (🔒)
-DELETE /api/events/:id/favorite  Quitar favorito (🔒)
-GET    /api/events/:id/favorite/status  Estado de favorito (🔒)
+GET    /api/events/:id/participants Ver lista de participantes (auth owner/admin)
+POST   /api/events               Crear actividad (auth organizador/admin)
+PUT    /api/events/:id           Editar actividad (auth owner/admin)
+DELETE /api/events/:id           Eliminar actividad (auth owner/admin)
+POST   /api/events/:id/register  Inscribirse (auth)
+DELETE /api/events/:id/register  Cancelar inscripción (auth)
+GET    /api/events/:id/register/status  Estado de inscripción (auth)
+POST   /api/events/:id/favorite  Agregar favorito (auth)
+DELETE /api/events/:id/favorite  Quitar favorito (auth)
+GET    /api/events/:id/favorite/status  Estado de favorito (auth)
 ```
 
 **Filtros disponibles en `GET /api/events`:**
@@ -166,23 +166,23 @@ GET    /api/events/:id/favorite/status  Estado de favorito (🔒)
 ```
 GET    /api/categories        Listar (público)
 GET    /api/categories/:id    Ver detalle (público)
-POST   /api/categories        Crear (🔒 admin)
-PUT    /api/categories/:id    Editar (🔒 admin)
-DELETE /api/categories/:id    Eliminar (🔒 admin)
+POST   /api/categories        Crear (auth admin)
+PUT    /api/categories/:id    Editar (auth admin)
+DELETE /api/categories/:id    Eliminar (auth admin)
 ```
 
 ### Notificaciones
 
 ```
-GET    /api/notifications          Mis notificaciones (🔒)
-PATCH  /api/notifications/:id/read Marcar como leída (🔒)
-PATCH  /api/notifications/read-all Marcar todas como leídas (🔒)
+GET    /api/notifications          Mis notificaciones (auth)
+PATCH  /api/notifications/:id/read Marcar como leída (auth)
+PATCH  /api/notifications/read-all Marcar todas como leídas (auth)
 ```
 
 ### Dashboard
 
 ```
-GET    /api/dashboard    Dashboard según rol del usuario (🔒)
+GET    /api/dashboard    Dashboard según rol del usuario (auth)
 ```
 
 ### Health Check
@@ -195,7 +195,7 @@ GET    /api/health    Verificar que la API esté activa (público)
 
 ## Autenticación
 
-Los endpoints marcados con 🔒 requieren el header:
+Los endpoints marcados con auth requieren el header:
 
 ```
 Authorization: Bearer <token>

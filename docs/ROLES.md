@@ -4,17 +4,17 @@ CommunityHub maneja tres roles, almacenados en `User.role`: `administrador`, `or
 
 | Acción | Usuario | Organizador | Administrador |
 |---|:---:|:---:|:---:|
-| Consultar actividades | ✅ | ✅ | ✅ |
-| Inscribirse / cancelar inscripción | ✅ | ✅ | ✅ |
-| Marcar favoritos | ✅ | ✅ | ✅ |
-| Consultar su historial / notificaciones | ✅ | ✅ | ✅ |
-| Crear actividad | ❌ | ✅ | ✅ |
-| Editar/cancelar **su propia** actividad | ❌ | ✅ | ✅ |
-| Editar/cancelar actividad de **otro** organizador | ❌ | ❌ | ✅ |
-| Consultar participantes de una actividad | ❌ | ✅ (solo las suyas, vía middleware) | ✅ |
-| Gestionar categorías (crear/editar/eliminar) | ❌ | ❌ | ✅ |
-| Gestionar usuarios (listar/editar/eliminar) | ❌ | ❌ | ✅ |
-| Ver estadísticas globales | ❌ | ❌ | ✅ |
+| Consultar actividades | Si | Si | Si |
+| Inscribirse / cancelar inscripción | Si | Si | Si |
+| Marcar favoritos | Si | Si | Si |
+| Consultar su historial / notificaciones | Si | Si | Si |
+| Crear actividad | No | Si | Si |
+| Editar/cancelar **su propia** actividad | No | Si | Si |
+| Editar/cancelar actividad de **otro** organizador | No | No | Si |
+| Consultar participantes de una actividad | No | Si (solo las suyas, vía middleware) | Si |
+| Gestionar categorías (crear/editar/eliminar) | No | No | Si |
+| Gestionar usuarios (listar/editar/eliminar) | No | No | Si |
+| Ver estadísticas globales | No | No | Si |
 
 ## Implementación
 
