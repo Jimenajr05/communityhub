@@ -1,9 +1,10 @@
 <!--
   Página "Mis actividades" (ruta "/mis-actividades", requiere rol de organizador).
-  Permite al organizador crear, editar, cancelar y eliminar sus actividades,
-  y consultar la lista de participantes inscritos en cada una.
+  Permite crear, editar, cancelar y eliminar actividades y consultar los participantes inscritos.
 -->
 <script setup lang="ts">
+import { Plus, X, Pencil, Ban, Trash2, Users, CalendarDays, MapPin, Clock, CheckCircle2, AlertCircle } from 'lucide-vue-next';
+
 definePageMeta({ middleware: 'organizer' });
 useHead({ title: 'Mis actividades · CommunityHub' });
 
@@ -11,13 +12,12 @@ const authStore = useAuthStore();
 const eventsStore = useEventsStore();
 const { apiFetch } = useApi();
 
-const cargando = ref(true); // Indica si se está cargando el listado inicial de actividades
-const mostrarFormulario = ref(false); // Controla la visibilidad del formulario de creación/edición
-const editandoId = ref<string | null>(null); // Id de la actividad en edición (null si se está creando una nueva)
-const guardando = ref(false); // Indica si el formulario se está guardando
-const errorFormulario = ref(''); // Mensaje de error al guardar el formulario
+const cargando = ref(true);
+const mostrarFormulario = ref(false);
+const editandoId = ref<string | null>(null);
+const guardando = ref(false);
+const errorFormulario = ref('');
 
-/** Datos de un participante inscrito en una actividad. */
 interface Participante {
   _id: string;
   user: {
@@ -30,13 +30,12 @@ interface Participante {
   createdAt: string;
 }
 
-const mostrarParticipantes = ref(false); // Controla la visibilidad del modal de participantes
-const actividadSeleccionada = ref<any>(null); // Actividad cuyo listado de participantes se está viendo
-const participantes = ref<Participante[]>([]); // Participantes cargados de la actividad seleccionada
-const cargandoParticipantes = ref(false); // Indica si se está cargando el listado de participantes
-const errorParticipantes = ref(''); // Mensaje de error al cargar participantes
+const mostrarParticipantes = ref(false);
+const actividadSeleccionada = ref<any>(null);
+const participantes = ref<Participante[]>([]);
+const cargandoParticipantes = ref(false);
+const errorParticipantes = ref('');
 
-// Datos del formulario de creación/edición de actividad.
 const form = reactive({
   title: '',
   description: '',
@@ -47,7 +46,6 @@ const form = reactive({
   capacity: 20,
 });
 
-/** Restablece el formulario a sus valores por defecto y sale del modo edición. */
 function resetFormulario() {
   form.title = '';
   form.description = '';
@@ -60,7 +58,6 @@ function resetFormulario() {
   errorFormulario.value = '';
 }
 
-// Al montar la página, carga categorías y las actividades organizadas por el usuario actual.
 onMounted(async () => {
   await eventsStore.cargarCategorias();
   await eventsStore.buscar({ organizer: authStore.usuario?.id });
@@ -68,16 +65,11 @@ onMounted(async () => {
   cargando.value = false;
 });
 
-/** Abre el formulario en modo creación de una nueva actividad. */
 function abrirCreacion() {
   resetFormulario();
   mostrarFormulario.value = true;
 }
 
-/**
- * Abre el formulario en modo edición, precargando los datos de la actividad.
- * @param actividad Actividad a editar.
- */
 function abrirEdicion(actividad: any) {
   editandoId.value = actividad._id;
   form.title = actividad.title;
@@ -90,10 +82,6 @@ function abrirEdicion(actividad: any) {
   mostrarFormulario.value = true;
 }
 
-/**
- * Carga y muestra el listado de participantes inscritos en una actividad.
- * @param actividad Actividad de la que se desean ver los participantes.
- */
 async function verParticipantes(actividad: any) {
   actividadSeleccionada.value = actividad;
   mostrarParticipantes.value = true;
@@ -120,7 +108,6 @@ async function verParticipantes(actividad: any) {
   }
 }
 
-/** Guarda la actividad del formulario: crea una nueva o actualiza la existente en edición. */
 async function guardar() {
   guardando.value = true;
   errorFormulario.value = '';
@@ -141,22 +128,14 @@ async function guardar() {
   }
 }
 
-/**
- * Cancela una actividad (cambia su estado a "cancelled"), previa confirmación.
- * @param actividad Actividad a cancelar.
- */
 async function cancelarActividad(actividad: any) {
-  if (!confirm(`¿Cancelar la actividad "${actividad.title}"? Se notificará a los inscritos.`)) return;
+  if (!confirm(`¿Cancelar la actividad "${actividad.title}"? Se notificará a los participantes inscritos.`)) return;
   await eventsStore.actualizarActividad(actividad._id, { status: 'cancelled' });
   await eventsStore.buscar({ organizer: authStore.usuario?.id });
 }
 
-/**
- * Elimina definitivamente una actividad, previa confirmación.
- * @param actividad Actividad a eliminar.
- */
 async function eliminarActividad(actividad: any) {
-  if (!confirm(`¿Eliminar definitivamente "${actividad.title}"?`)) return;
+  if (!confirm(`¿Eliminar definitivamente "${actividad.title}"? Esta acción no se puede deshacer.`)) return;
   await eventsStore.eliminarActividad(actividad._id);
   await eventsStore.buscar({ organizer: authStore.usuario?.id });
 }
@@ -165,148 +144,113 @@ async function eliminarActividad(actividad: any) {
 <template>
   <div class="panel-page">
     <div class="panel-container">
+      <header class="panel-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <span class="panel-eyebrow">Gestión Comunitaria</span>
+          <h1>Mis actividades organizadas</h1>
+          <p>Crea, edita y administra tus actividades y consulta la lista de participantes inscritos.</p>
+        </div>
 
-      <header class="panel-header">
-        <span class="panel-eyebrow">Organizador</span>
-        <h1>Mis actividades</h1>
-        <p>Crea, edita y administra las actividades que organizas y consulta tus participantes.</p>
+        <button type="button" class="pill-btn pill-btn--primary" @click="abrirCreacion">
+          <Plus :size="16" :stroke-width="2.4" /> Publicar nueva actividad
+        </button>
       </header>
 
-      <button type="button" class="pill-btn" style="margin-bottom: 1.5rem" @click="abrirCreacion">
-        + Nueva actividad
-      </button>
+      <p v-if="cargando" class="panel-empty">Cargando tus actividades...</p>
 
-      <div v-if="mostrarFormulario" class="panel-card" style="margin-bottom: 2rem">
-        <h2>{{ editandoId ? 'Editar actividad' : 'Nueva actividad' }}</h2>
-        <form novalidate @submit.prevent="guardar">
-          <div class="field">
-            <label>Título</label>
-            <input v-model.trim="form.title" type="text" required />
-          </div>
-          <div class="field">
-            <label>Descripción</label>
-            <input v-model.trim="form.description" type="text" required />
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <label>Categoría</label>
-              <select v-model="form.category" required>
-                <option v-for="cat in eventsStore.categorias" :key="cat._id" :value="cat._id">
-                  {{ cat.name }}
-                </option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Capacidad</label>
-              <input v-model.number="form.capacity" type="number" min="1" required />
-            </div>
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <label>Fecha</label>
-              <input v-model="form.date" type="date" required />
-            </div>
-            <div class="field">
-              <label>Hora</label>
-              <input v-model="form.time" type="time" required />
-            </div>
-          </div>
-          <div class="field">
-            <label>Ubicación</label>
-            <input v-model.trim="form.location" type="text" required />
-          </div>
-
-          <p v-if="errorFormulario" class="form-error">{{ errorFormulario }}</p>
-
-          <div style="display: flex; gap: 0.6rem">
-            <button type="submit" class="submit-btn" :disabled="guardando">
-              {{ guardando ? 'Guardando…' : 'Guardar' }}
-            </button>
-            <button type="button" class="pill-btn pill-btn--ghost" @click="mostrarFormulario = false">
-              Cancelar
-            </button>
-          </div>
-        </form>
+      <!-- Estado vacío -->
+      <div v-else-if="eventsStore.actividades.length === 0" class="panel-card empty-card">
+        <svg class="empty-card__glyph" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="1.6" stroke-dasharray="4 6" opacity="0.35" />
+          <rect x="20" y="20" width="24" height="24" rx="4" stroke="currentColor" stroke-width="1.8" />
+          <path d="M20,28 H44" stroke="currentColor" stroke-width="1.6" />
+          <path d="M32,32 V40 M28,36 H36" stroke="var(--ch-marigold)" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        <h3>Aún no has creado ninguna actividad</h3>
+        <p>Publica talleres, deportes, encuentros artísticos o iniciativas comunitarias para tu zona.</p>
+        <button type="button" class="pill-btn pill-btn--primary" @click="abrirCreacion">
+          <Plus :size="16" :stroke-width="2.4" /> Crear mi primera actividad
+        </button>
       </div>
 
-      <p v-if="cargando" class="panel-empty">Cargando…</p>
-
-      <p v-else-if="eventsStore.actividades.length === 0" class="panel-empty">
-        Todavía no has creado ninguna actividad.
-      </p>
-
+      <!-- Tabla de actividades organizadas -->
       <div v-else class="data-table-wrap panel-card">
         <table class="data-table">
           <thead>
             <tr>
               <th>Actividad</th>
-              <th>Fecha</th>
-              <th>Inscritos</th>
-              <th>Cupo disponible</th>
+              <th>Fecha y Lugar</th>
+              <th>Ocupación</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="actividad in eventsStore.actividades" :key="actividad._id">
+            <tr v-for="act in eventsStore.actividades" :key="act._id">
               <td>
-                <NuxtLink :to="`/actividad/${actividad._id}`" class="activity-title-link">
-                  <strong>{{ actividad.title }}</strong>
+                <NuxtLink :to="`/actividad/${act._id}`" class="org-act-link">
+                  <strong>{{ act.title }}</strong>
+                  <span class="org-act-cat">{{ act.category?.name || 'General' }}</span>
                 </NuxtLink>
               </td>
               <td>
-                <span class="table-date">
-                  {{ new Date(actividad.date).toLocaleDateString('es-CR', { day: 'numeric', month: 'short', year: 'numeric' }) }}
-                </span>
-                <span v-if="actividad.time" class="table-time">· {{ actividad.time }}</span>
+                <span class="table-date">{{ new Date(act.date).toLocaleDateString('es-CR', { day: 'numeric', month: 'short' }) }}</span>
+                <span class="table-loc"> · {{ act.location }}</span>
               </td>
               <td>
-                <button
-                  type="button"
-                  class="badge-btn"
-                  :title="'Ver lista de inscritos (' + actividad.registeredCount + ')'"
-                  @click="verParticipantes(actividad)"
+                <div class="capacity-cell">
+                  <div class="capacity-bar">
+                    <div
+                      class="capacity-fill"
+                      :style="{ width: `${Math.min(100, Math.round(((act.registeredCount || 0) / (act.capacity || 1)) * 100))}%` }"
+                    />
+                  </div>
+                  <span class="capacity-text">{{ act.registeredCount || 0 }}/{{ act.capacity }} inscritos</span>
+                </div>
+              </td>
+              <td>
+                <span
+                  class="status-pill"
+                  :class="act.status === 'active' ? 'status-pill--active' : act.status === 'cancelled' ? 'status-pill--cancelled' : 'status-pill--finished'"
                 >
-                  {{ actividad.registeredCount }} inscritos
-                </button>
-              </td>
-              <td>
-                <span class="spots-count">
-                  {{ actividad.spotsAvailable }} <small>/ {{ actividad.capacity }}</small>
-                </span>
-              </td>
-              <td>
-                <span class="status-pill" :class="`status-pill--${actividad.status}`">
                   <span class="status-dot" />
-                  {{ actividad.status === 'active' ? 'Activa' : actividad.status === 'cancelled' ? 'Cancelada' : 'Finalizada' }}
+                  {{ act.status === 'active' ? 'Activa' : act.status === 'cancelled' ? 'Cancelada' : 'Finalizada' }}
                 </span>
               </td>
               <td>
                 <div class="table-actions">
                   <button
                     type="button"
-                    class="action-pill action-pill--edit"
+                    class="action-btn"
+                    title="Ver participantes"
+                    @click="verParticipantes(act)"
+                  >
+                    <Users :size="15" :stroke-width="2" />
+                  </button>
+                  <button
+                    type="button"
+                    class="action-btn"
                     title="Editar actividad"
-                    @click="abrirEdicion(actividad)"
+                    @click="abrirEdicion(act)"
                   >
-                    Editar
+                    <Pencil :size="15" :stroke-width="2" />
                   </button>
                   <button
-                    v-if="actividad.status === 'active'"
+                    v-if="act.status === 'active'"
                     type="button"
-                    class="action-pill action-pill--cancel"
+                    class="action-btn action-btn--warning"
                     title="Cancelar actividad"
-                    @click="cancelarActividad(actividad)"
+                    @click="cancelarActividad(act)"
                   >
-                    Cancelar
+                    <Ban :size="15" :stroke-width="2" />
                   </button>
                   <button
                     type="button"
-                    class="action-pill action-pill--delete"
+                    class="action-btn action-btn--danger"
                     title="Eliminar actividad"
-                    @click="eliminarActividad(actividad)"
+                    @click="eliminarActividad(act)"
                   >
-                    Eliminar
+                    <Trash2 :size="15" :stroke-width="2" />
                   </button>
                 </div>
               </td>
@@ -315,66 +259,118 @@ async function eliminarActividad(actividad: any) {
         </table>
       </div>
 
-      <div v-if="mostrarParticipantes" class="modal-backdrop" @click="mostrarParticipantes = false">
-        <div class="modal-card panel-card" @click.stop>
+      <!-- MODAL DE CREACIÓN / EDICIÓN -->
+      <div v-if="mostrarFormulario" class="modal-backdrop" @click.self="mostrarFormulario = false">
+        <div class="modal-box panel-card" role="dialog" aria-modal="true">
           <div class="modal-header">
-            <div>
-              <span class="panel-eyebrow">Lista de Asistencia</span>
-              <h2 class="modal-title">{{ actividadSeleccionada?.title }}</h2>
-              <p class="modal-subtitle">
-                Total inscritos: {{ actividadSeleccionada?.registeredCount }} / Capacidad: {{ actividadSeleccionada?.capacity }}
-              </p>
-            </div>
-            <button
-              type="button"
-              class="modal-close"
-              aria-label="Cerrar"
-              @click="mostrarParticipantes = false"
-            >
-              ✕
+            <h2>{{ editandoId ? 'Editar actividad' : 'Publicar nueva actividad' }}</h2>
+            <button type="button" class="modal-close" @click="mostrarFormulario = false">
+              <X :size="18" :stroke-width="2.2" />
             </button>
           </div>
 
-          <div class="modal-body">
-            <p v-if="cargandoParticipantes" class="panel-empty">Cargando participantes…</p>
-            <p v-else-if="errorParticipantes" class="form-error">{{ errorParticipantes }}</p>
-            <p v-else-if="participantes.length === 0" class="panel-empty">
-              Aún no hay usuarios inscritos en esta actividad.
-            </p>
-
-            <div v-else class="data-table-wrap">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Participante</th>
-                    <th>Correo</th>
-                    <th>Fecha de inscripción</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="p in participantes" :key="p._id || p.user?._id">
-                    <td>
-                      <strong>{{ p.user?.firstName }} {{ p.user?.lastName }}</strong>
-                    </td>
-                    <td>{{ p.user?.email }}</td>
-                    <td>
-                      {{ p.createdAt ? new Date(p.createdAt).toLocaleDateString('es-CR') : 'Registrado' }}
-                    </td>
-                    <td>
-                      <span class="status-tag status-tag--confirmed">
-                        {{ p.status === 'confirmed' || !p.status ? 'Confirmado' : p.status }}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+          <form novalidate @submit.prevent="guardar">
+            <div class="field">
+              <label for="act-title">Título de la actividad</label>
+              <input id="act-title" v-model.trim="form.title" type="text" placeholder="Ej. Taller de Robótica Comunitaria" required />
             </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="act-cat">Categoría</label>
+                <select id="act-cat" v-model="form.category" required>
+                  <option v-for="cat in eventsStore.categorias" :key="cat._id" :value="cat._id">
+                    {{ cat.name }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="act-cap">Cupo máximo (capacidad)</label>
+                <input id="act-cap" v-model.number="form.capacity" type="number" min="1" required />
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="act-date">Fecha</label>
+                <input id="act-date" v-model="form.date" type="date" required />
+              </div>
+
+              <div class="field">
+                <label for="act-time">Horario</label>
+                <input id="act-time" v-model.trim="form.time" type="text" placeholder="Ej. 10:00 AM - 12:30 PM" required />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="act-loc">Punto de encuentro / Ubicación</label>
+              <input id="act-loc" v-model.trim="form.location" type="text" placeholder="Ej. Centro Comunitario Norte, Salón 2" required />
+            </div>
+
+            <div class="field">
+              <label for="act-desc">Descripción de la actividad</label>
+              <textarea id="act-desc" v-model.trim="form.description" rows="4" placeholder="Explica los detalles, qué deben llevar los participantes y la dinámica del evento..." required />
+            </div>
+
+            <p v-if="errorFormulario" class="form-error">{{ errorFormulario }}</p>
+
+            <div class="modal-footer">
+              <button type="button" class="pill-btn pill-btn--ghost" @click="mostrarFormulario = false">
+                Cancelar
+              </button>
+              <button type="submit" class="pill-btn pill-btn--primary" :disabled="guardando">
+                {{ guardando ? 'Guardando...' : editandoId ? 'Guardar cambios' : 'Publicar actividad' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- MODAL DE PARTICIPANTES -->
+      <div v-if="mostrarParticipantes" class="modal-backdrop" @click.self="mostrarParticipantes = false">
+        <div class="modal-box panel-card" role="dialog" aria-modal="true">
+          <div class="modal-header">
+            <div>
+              <h2>Participantes inscritos</h2>
+              <p class="modal-subtitle">{{ actividadSeleccionada?.title }}</p>
+            </div>
+            <button type="button" class="modal-close" @click="mostrarParticipantes = false">
+              <X :size="18" :stroke-width="2.2" />
+            </button>
           </div>
 
-          <div class="modal-footer">
-            <button type="button" class="pill-btn pill-btn--ghost" @click="mostrarParticipantes = false">
-              Cerrar
+          <p v-if="cargandoParticipantes" class="panel-empty">Consultando lista de inscritos...</p>
+          <div v-else-if="errorParticipantes" class="form-error">{{ errorParticipantes }}</div>
+
+          <div v-else-if="participantes.length === 0" class="panel-empty">
+            Aún no hay participantes inscritos en esta actividad.
+          </div>
+
+          <div v-else class="data-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Persona</th>
+                  <th>Correo</th>
+                  <th>Fecha de registro</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="p in participantes" :key="p._id">
+                  <td>
+                    <strong>{{ p.user?.firstName }} {{ p.user?.lastName }}</strong>
+                  </td>
+                  <td>{{ p.user?.email }}</td>
+                  <td>{{ new Date(p.createdAt).toLocaleDateString('es-CR') }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="modal-footer" style="margin-top: 1.5rem;">
+            <button type="button" class="pill-btn pill-btn--secondary" @click="mostrarParticipantes = false">
+              Cerrar lista
             </button>
           </div>
         </div>
@@ -385,252 +381,211 @@ async function eliminarActividad(actividad: any) {
 </template>
 
 <style scoped>
-.activity-title-link {
-  display: inline-flex;
+.empty-card {
+  text-align: center;
+  padding: 4rem 2rem;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  color: var(--ch-text-on-paper);
+  gap: 0.75rem;
+}
+
+.empty-card__glyph {
+  width: 3.75rem;
+  height: 3.75rem;
+  color: var(--ch-coral-light);
+  margin-bottom: 0.5rem;
+}
+
+.empty-card h3 {
+  font-size: 1.35rem;
+  margin: 0;
+  color: #ffffff;
+}
+
+.empty-card p {
+  color: var(--ch-text-on-paper-muted);
+  max-width: 28rem;
+  margin: 0 0 1.5rem;
+}
+
+.org-act-link {
+  display: flex;
+  flex-direction: column;
   text-decoration: none;
-  font-size: 0.96rem;
+  color: #ffffff;
   transition: color 0.15s ease;
 }
 
-.activity-title-link:hover {
-  color: var(--ch-coral);
+.org-act-link:hover {
+  color: var(--ch-coral-light);
 }
 
-.activity-bullet {
-  font-size: 1.1rem;
+.org-act-cat {
+  font-family: var(--ch-font-mono);
+  font-size: 0.74rem;
+  color: var(--ch-text-on-paper-dim);
+  text-transform: uppercase;
 }
 
 .table-date {
-  font-weight: 500;
-  color: var(--ch-text-on-paper);
-  white-space: nowrap;
+  font-weight: 600;
+  color: #ffffff;
 }
 
-.table-time {
-  font-size: 0.8rem;
+.table-loc {
+  font-size: 0.84rem;
   color: var(--ch-text-on-paper-muted);
 }
 
-.spots-count {
-  font-weight: 600;
-  color: var(--ch-text-on-paper);
+.capacity-cell {
+  width: 9rem;
 }
 
-.spots-count small {
-  font-weight: 400;
+.capacity-bar {
+  height: 5px;
+  border-radius: var(--ch-radius-full);
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  margin-bottom: 0.35rem;
+}
+
+.capacity-fill {
+  height: 100%;
+  background: var(--ch-coral-light);
+  border-radius: var(--ch-radius-full);
+}
+
+.capacity-text {
+  font-size: 0.76rem;
+  font-family: var(--ch-font-mono);
   color: var(--ch-text-on-paper-muted);
-}
-
-.badge-btn {
-  background: var(--ch-paper-2);
-  border: 1px solid var(--ch-line);
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  font-family: var(--ch-font-body);
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--ch-text-on-paper);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.badge-btn:hover {
-  background: var(--ch-coral);
-  color: #fff;
-  border-color: var(--ch-coral);
 }
 
 .status-pill {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-family: var(--ch-font-body);
-  font-size: 0.78rem;
+  font-family: var(--ch-font-mono);
+  font-size: 0.76rem;
   font-weight: 600;
   padding: 0.25rem 0.65rem;
-  border-radius: 999px;
-  white-space: nowrap;
-}
-
-.status-dot {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 50%;
+  border-radius: var(--ch-radius-full);
 }
 
 .status-pill--active {
   background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  color: var(--ch-leaf);
 }
-
-.status-pill--active .status-dot {
-  background: #10b981;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
-}
+.status-pill--active .status-dot { background: var(--ch-leaf); }
 
 .status-pill--cancelled {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  background: rgba(244, 63, 94, 0.15);
+  color: var(--ch-rose);
 }
-
-.status-pill--cancelled .status-dot {
-  background: #ef4444;
-}
+.status-pill--cancelled .status-dot { background: var(--ch-rose); }
 
 .status-pill--finished {
   background: rgba(148, 163, 184, 0.15);
-  color: #94a3b8;
+  color: var(--ch-text-on-paper-muted);
 }
-
-.status-pill--finished .status-dot {
-  background: #94a3b8;
-}
+.status-pill--finished .status-dot { background: var(--ch-text-on-paper-muted); }
 
 .table-actions {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  white-space: nowrap;
+  gap: 0.4rem;
 }
 
-.action-pill {
-  display: inline-flex;
+.action-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--ch-line-strong);
+  color: var(--ch-text-on-paper-muted);
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--ch-radius-sm);
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
-  font-family: var(--ch-font-body);
-  font-size: 0.8rem;
-  font-weight: 600;
-  padding: 0.35rem 0.7rem;
-  border-radius: var(--ch-radius-sm);
-  border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.action-pill--edit {
-  background: var(--ch-paper-2);
-  border-color: var(--ch-line);
-  color: var(--ch-text-on-paper);
-}
-
-.action-pill--edit:hover {
-  border-color: var(--ch-coral);
-  color: var(--ch-coral);
-  background: rgba(99, 102, 241, 0.08);
-}
-
-.action-pill--cancel {
-  background: rgba(245, 158, 11, 0.12);
-  border-color: rgba(245, 158, 11, 0.25);
-  color: #f59e0b;
-}
-
-.action-pill--cancel:hover {
-  background: #f59e0b;
+.action-btn:hover {
+  background: var(--ch-paper-3);
   color: #ffffff;
+  border-color: var(--ch-coral-light);
 }
 
-.action-pill--delete {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
-  padding: 0.35rem 0.55rem;
+.action-btn--warning:hover {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--ch-marigold);
+  border-color: var(--ch-marigold);
 }
 
-.action-pill--delete:hover {
-  background: #ef4444;
-  color: #ffffff;
+.action-btn--danger:hover {
+  background: rgba(244, 63, 94, 0.15);
+  color: var(--ch-rose);
+  border-color: var(--ch-rose);
 }
 
+/* Modales */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(4px);
-  z-index: 99;
+  z-index: 100;
+  background: rgba(4, 6, 12, 0.8);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
 }
 
-.modal-card {
+.modal-box {
   width: 100%;
-  max-width: 44rem;
-  max-height: 85vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
-  position: relative;
-  border-radius: var(--ch-radius-md);
+  max-width: 36rem;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .modal-header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  gap: 1rem;
-  border-bottom: 1px solid var(--ch-line);
-  padding-bottom: 1rem;
-  margin-bottom: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
 }
 
-.modal-title {
-  margin: 0.2rem 0;
-  font-size: 1.3rem;
-  color: var(--ch-text-on-paper);
+.modal-header h2 {
+  font-size: 1.4rem;
+  margin: 0;
+  color: #ffffff;
 }
 
 .modal-subtitle {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--ch-text-on-paper-muted);
-  font-family: var(--ch-font-mono);
+  font-size: 0.86rem;
+  color: var(--ch-coral-light);
+  margin: 0.2rem 0 0;
 }
 
 .modal-close {
   background: none;
   border: none;
-  font-size: 1.25rem;
   color: var(--ch-text-on-paper-muted);
   cursor: pointer;
-  padding: 0.2rem 0.5rem;
-  border-radius: var(--ch-radius-sm);
-  transition: all 0.15s ease;
+  padding: 0.3rem;
+  border-radius: 4px;
 }
 
 .modal-close:hover {
-  color: var(--ch-coral);
-  background: rgba(255, 107, 74, 0.1);
-}
-
-.modal-body {
-  overflow-y: auto;
-  flex: 1;
-  padding-right: 0.25rem;
+  color: #ffffff;
 }
 
 .modal-footer {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  border-top: 1px solid var(--ch-line);
-  padding-top: 1rem;
-  margin-top: 1rem;
-}
-
-.status-tag {
-  font-family: var(--ch-font-mono);
-  font-size: 0.75rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 999px;
-  background: rgba(16, 185, 129, 0.15);
-  color: #047857;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
 }
 </style>
-

@@ -4,6 +4,8 @@
   automáticamente al usuario y lo redirige a la ruta solicitada o al inicio.
 -->
 <script setup lang="ts">
+import { Eye, EyeOff, ArrowRight } from 'lucide-vue-next';
+
 useHead({ title: 'Crear cuenta · CommunityHub' });
 
 const firstName = ref(''); // Nombre ingresado en el formulario
@@ -106,7 +108,7 @@ async function onSubmit() {
               type="email"
               autocomplete="email"
               required
-              placeholder=""
+              placeholder="tu-correo@ejemplo.com"
               :disabled="cargando"
             />
           </div>
@@ -129,7 +131,8 @@ async function onSubmit() {
                 :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
                 @click="showPassword = !showPassword"
               >
-                {{ showPassword ? 'Ocultar' : 'Ver' }}
+                <EyeOff v-if="showPassword" :size="16" :stroke-width="2" />
+                <Eye v-else :size="16" :stroke-width="2" />
               </button>
             </div>
             <span class="field-hint">Mínimo 8 caracteres.</span>
@@ -138,7 +141,7 @@ async function onSubmit() {
           <p v-if="errorMessage" class="form-error" role="alert">{{ errorMessage }}</p>
 
           <button type="submit" class="submit-btn" :disabled="cargando || !isFormValid">
-            <span v-if="!cargando">Crear cuenta</span>
+            <span v-if="!cargando">Crear cuenta <ArrowRight :size="15" :stroke-width="2.2" style="vertical-align: middle; margin-left: 0.3rem;" /></span>
             <span v-else>Creando cuenta…</span>
           </button>
 

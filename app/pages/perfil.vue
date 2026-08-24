@@ -1,35 +1,33 @@
 <!--
   Página "Mi perfil" (ruta "/perfil", requiere autenticación).
-  Permite al usuario ver y editar sus datos personales (nombre, apellido)
-  y su foto de perfil (subida como archivo o mediante URL directa).
+  Permite al usuario ver y editar sus datos personales y foto de perfil.
 -->
 <script setup lang="ts">
+import { Camera, Trash2, Check, CircleX, User, ShieldCheck, Mail, Sparkles } from 'lucide-vue-next';
+
 definePageMeta({ middleware: 'auth' });
 useHead({ title: 'Mi perfil · CommunityHub' });
 
 const authStore = useAuthStore();
 
-const firstName = ref(authStore.usuario?.firstName ?? ''); // Nombre editable del usuario
-const lastName = ref(authStore.usuario?.lastName ?? ''); // Apellido editable del usuario
-const profilePicture = ref(authStore.usuario?.profilePicture ?? ''); // Foto de perfil (data URL o URL externa)
-const guardando = ref(false); // Indica si el formulario se está guardando
-const mensaje = ref<{ tipo: 'exito' | 'error'; texto: string } | null>(null); // Mensaje de resultado tras guardar
+const firstName = ref(authStore.usuario?.firstName ?? '');
+const lastName = ref(authStore.usuario?.lastName ?? '');
+const profilePicture = ref(authStore.usuario?.profilePicture ?? '');
+const guardando = ref(false);
+const mensaje = ref<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
 
-const fileInputRef = ref<HTMLInputElement | null>(null); // Referencia al input de archivo oculto
+const fileInputRef = ref<HTMLInputElement | null>(null);
 
-// Traducción legible de los roles de usuario para mostrar en el formulario.
 const rolLegible: Record<string, string> = {
-  administrador: 'Administrador',
-  organizador: 'Organizador',
-  usuario: 'Usuario',
+  administrador: 'Administrador del Sistema',
+  organizador: 'Organizador de Actividades',
+  usuario: 'Miembro Comunitario',
 };
 
-/** Abre el selector de archivos para elegir una nueva foto de perfil. */
 function triggerFileInput() {
   fileInputRef.value?.click();
 }
 
-/** Procesa el archivo de imagen seleccionado y lo convierte a data URL para previsualizarlo/guardarlo. */
 function handleFileChange(event: Event) {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
@@ -38,7 +36,7 @@ function handleFileChange(event: Event) {
   if (file.size > 2 * 1024 * 1024) {
     mensaje.value = {
       tipo: 'error',
-      texto: 'La imagen debe ser menor a 2MB.',
+      texto: 'El tamaño de la imagen debe ser menor a 2MB.',
     };
     return;
   }
@@ -50,7 +48,6 @@ function handleFileChange(event: Event) {
   reader.readAsDataURL(file);
 }
 
-/** Quita la foto de perfil seleccionada y limpia el input de archivo. */
 function quitarFoto() {
   profilePicture.value = '';
   if (fileInputRef.value) {
@@ -58,17 +55,16 @@ function quitarFoto() {
   }
 }
 
-/** Guarda los cambios de perfil (nombre, apellido y foto) mediante el store de autenticación. */
 async function guardar() {
   guardando.value = true;
   mensaje.value = null;
   try {
     await authStore.actualizarPerfil({
-      firstName: firstName.value,
-      lastName: lastName.value,
+      firstName: firstName.value.trim(),
+      lastName: lastName.value.trim(),
       profilePicture: profilePicture.value || null as any,
     });
-    mensaje.value = { tipo: 'exito', texto: 'Perfil actualizado correctamente.' };
+    mensaje.value = { tipo: 'exito', texto: 'Tu información de perfil se ha actualizado correctamente.' };
   } catch (err: unknown) {
     const fetchError = err as { data?: { message?: string } };
     mensaje.value = {
@@ -86,16 +82,17 @@ async function guardar() {
     <div class="panel-container">
 
       <header class="panel-header">
-        <span class="panel-eyebrow">Tu cuenta</span>
-        <h1>Mi perfil</h1>
-        <p>Actualiza tu información personal y foto de perfil.</p>
+        <span class="panel-eyebrow">Tu identidad</span>
+        <h1>Mi perfil de usuario</h1>
+        <p>Gestiona tu información personal, foto de perfil y presencia en la comunidad.</p>
       </header>
 
-      <div class="panel-card" style="max-width: 36rem">
+      <div class="panel-card profile-card">
         <form novalidate @submit.prevent="guardar">
 
-          <div class="profile-photo-section">
-            <div class="profile-avatar-wrap">
+          <!-- Sección de Avatar y Foto -->
+          <div class="profile-photo-row">
+            <div class="profile-avatar-box">
               <img
                 v-if="profilePicture"
                 :src="profilePicture"
@@ -107,17 +104,17 @@ async function guardar() {
               </div>
             </div>
 
-            <div class="profile-photo-actions">
-              <span class="profile-photo-label">Foto de perfil</span>
-              <p class="profile-photo-hint">Recomendado: JPG o PNG (máx. 2MB).</p>
+            <div class="profile-photo-info">
+              <span class="profile-photo-title">Foto de perfil</span>
+              <p class="profile-photo-hint">Formatos soportados: JPG, PNG o WebP (máximo 2MB).</p>
 
-              <div class="profile-photo-buttons">
+              <div class="profile-photo-btns">
                 <button
                   type="button"
                   class="pill-btn pill-btn--ghost"
                   @click="triggerFileInput"
                 >
-                  {{ profilePicture ? 'Cambiar foto' : 'Subir foto' }}
+                  <Camera :size="15" :stroke-width="2" /> {{ profilePicture ? 'Cambiar imagen' : 'Subir foto' }}
                 </button>
                 <button
                   v-if="profilePicture"
@@ -125,7 +122,7 @@ async function guardar() {
                   class="pill-btn pill-btn--danger"
                   @click="quitarFoto"
                 >
-                  Quitar
+                  <Trash2 :size="15" :stroke-width="2" /> Quitar
                 </button>
               </div>
 
@@ -139,16 +136,18 @@ async function guardar() {
             </div>
           </div>
 
-          <div class="field" style="margin-top: 1.25rem;">
+          <!-- Opción de Enlace Directo (URL) -->
+          <div class="field" style="margin-top: 1.5rem;">
             <label for="picUrl">O enlace directo a imagen (URL)</label>
             <input
               id="picUrl"
               v-model.trim="profilePicture"
               type="url"
-              placeholder="https://ejemplo.com/mi-foto.jpg"
+              placeholder="https://ejemplo.com/mi-avatar.jpg"
             />
           </div>
 
+          <!-- Nombre y Apellido -->
           <div class="field-row">
             <div class="field">
               <label for="firstName">Nombre</label>
@@ -161,54 +160,63 @@ async function guardar() {
             </div>
           </div>
 
+          <!-- Correo y Rol (Solo Lectura) -->
           <div class="field">
-            <label>Correo electrónico</label>
+            <label>Correo electrónico (cuenta)</label>
             <input :value="authStore.usuario?.email" type="email" disabled />
           </div>
 
           <div class="field">
-            <label>Rol asignado</label>
+            <label>Rol comunitario asignado</label>
             <input :value="rolLegible[authStore.usuario?.role ?? 'usuario']" disabled />
           </div>
 
+          <!-- Banner de Feedback -->
           <div
             v-if="mensaje"
             class="action-banner"
             :class="`action-banner--${mensaje.tipo}`"
           >
-            {{ mensaje.texto }}
+            <Check v-if="mensaje.tipo === 'exito'" :size="16" :stroke-width="2.2" />
+            <CircleX v-else :size="16" :stroke-width="2.2" />
+            <span>{{ mensaje.texto }}</span>
           </div>
 
-          <button type="submit" class="pill-btn pill-btn--primary submit-btn" :disabled="guardando">
-            {{ guardando ? 'Guardando cambios…' : 'Guardar cambios' }}
+          <button type="submit" class="pill-btn pill-btn--primary profile-submit-btn" :disabled="guardando">
+            {{ guardando ? 'Guardando cambios...' : 'Guardar información del perfil' }}
           </button>
         </form>
       </div>
+
     </div>
   </div>
 </template>
 
 <style scoped>
-.profile-photo-section {
+.profile-card {
+  max-width: 38rem;
+  padding: 2.25rem;
+}
+
+.profile-photo-row {
   display: flex;
   align-items: center;
   gap: 1.5rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--ch-line);
-  margin-bottom: 1rem;
+  border-bottom: 1px dashed var(--ch-line);
 }
 
-.profile-avatar-wrap {
+.profile-avatar-box {
   width: 5rem;
   height: 5rem;
   border-radius: var(--ch-radius-md);
   overflow: hidden;
-  background: linear-gradient(135deg, var(--ch-coral) 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, var(--ch-coral) 0%, var(--ch-violet) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+  border: 1.5px solid var(--ch-line-strong);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   flex-shrink: 0;
 }
 
@@ -225,52 +233,56 @@ async function guardar() {
   color: #ffffff;
 }
 
-.profile-photo-actions {
+.profile-photo-info {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.35rem;
 }
 
-.profile-photo-label {
-  font-size: 0.92rem;
+.profile-photo-title {
+  font-size: 0.95rem;
   font-weight: 600;
-  color: var(--ch-text-on-paper);
+  color: #ffffff;
 }
 
 .profile-photo-hint {
-  margin: 0 0 0.5rem;
   font-size: 0.8rem;
   color: var(--ch-text-on-paper-muted);
+  margin-bottom: 0.4rem;
 }
 
-.profile-photo-buttons {
+.profile-photo-btns {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .action-banner {
-  padding: 0.8rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.85rem 1.15rem;
   border-radius: var(--ch-radius-sm);
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
   font-size: 0.9rem;
   font-weight: 500;
 }
 
 .action-banner--exito {
   background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
 }
 
 .action-banner--error {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #ef4444;
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  color: #fca5a5;
 }
 
-.submit-btn {
+.profile-submit-btn {
   width: 100%;
-  padding: 0.75rem 1.5rem;
+  padding: 0.85rem 1.25rem;
   font-size: 0.95rem;
   margin-top: 0.5rem;
 }

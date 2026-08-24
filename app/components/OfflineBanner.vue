@@ -1,5 +1,7 @@
 <!-- Banner que se muestra cuando el usuario pierde la conexión a internet (modo offline de la PWA) -->
 <script setup lang="ts">
+import { WifiOff } from 'lucide-vue-next';
+
 // Estado reactivo de conexión provisto por el composable useOnlineStatus
 const { isOnline } = useOnlineStatus();
 </script>
@@ -8,6 +10,7 @@ const { isOnline } = useOnlineStatus();
   <Transition name="slide-banner">
     <div v-if="!isOnline" class="offline-banner" role="status" aria-live="polite">
       <div class="offline-banner__content">
+        <WifiOff :size="18" :stroke-width="2" class="offline-banner__icon" />
         <div>
           <strong>Sin conexión a Internet (Modo Offline)</strong>
           <p>Estás navegando con la versión en caché de la PWA. Algunas funciones interactivas como la inscripción requieren conexión.</p>
@@ -36,8 +39,8 @@ const { isOnline } = useOnlineStatus();
   gap: 1rem;
 }
 
-.offline-icon {
-  font-size: 1.5rem;
+.offline-banner__icon {
+  flex-shrink: 0;
 }
 
 .offline-banner strong {

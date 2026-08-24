@@ -1,36 +1,38 @@
 <!--
   Página de detalle de actividad (ruta /actividad/[id]).
-  Muestra la información completa de una actividad y permite
-  inscribirse/cancelar inscripción y marcar/quitar de favoritos.
+  Diseño tipo dossier con panel lateral sticky para reserva de cupos e interacción comunitaria.
 -->
 <script setup lang="ts">
+import {
+  ArrowLeft,
+  CalendarDays,
+  MapPin,
+  User,
+  Users,
+  Heart,
+  CircleCheck,
+  CircleX,
+  Clock,
+  Sparkles,
+  ShieldCheck,
+  Check,
+} from 'lucide-vue-next';
 import type { Actividad } from '~/stores/events';
+import { useCategoryStyle } from '~/composables/useCategoryStyle';
 
 const route = useRoute();
 const authStore = useAuthStore();
 const eventsStore = useEventsStore();
 
-// Actividad actualmente mostrada, obtenida por su id de ruta
 const actividad = ref<Actividad | null>(null);
-// Indica si todavía se está cargando la actividad
 const cargando = ref(true);
-// Mensaje de error al cargar la actividad (si aplica)
 const error = ref<string | null>(null);
 
-// Indica si hay una acción (inscripción/favorito) en curso, para deshabilitar botones
 const procesandoAccion = ref(false);
-// Mensaje de resultado (éxito o error) tras inscribirse/cancelar o marcar/quitar favorito
 const mensajeAccion = ref<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
-// Indica si el usuario autenticado está inscrito en la actividad
 const estaInscrito = ref(false);
-// Indica si el usuario autenticado tiene la actividad marcada como favorita
 const esFavorito = ref(false);
 
-/**
- * Al montar la página, carga la actividad según el id de la ruta.
- * Si el usuario está autenticado, además verifica su estado de
- * inscripción y favorito para esa actividad.
- */
 onMounted(async () => {
   const id = route.params.id as string;
   if (!id) {
@@ -53,10 +55,6 @@ onMounted(async () => {
   cargando.value = false;
 });
 
-/**
- * Consulta al API si el usuario autenticado está inscrito y/o tiene
- * como favorita la actividad indicada, actualizando los refs correspondientes.
- */
 async function verificarEstados(eventId: string) {
   const { apiFetch } = useApi();
   try {
@@ -70,10 +68,6 @@ async function verificarEstados(eventId: string) {
   }
 }
 
-/**
- * Inscribe o cancela la inscripción del usuario en la actividad actual,
- * según su estado actual. Redirige a login si no está autenticado.
- */
 async function alternarInscripcion() {
   if (!authStore.estaAutenticado) {
     navigateTo(`/login?redirect=${encodeURIComponent(route.fullPath)}`);
@@ -89,12 +83,14 @@ async function alternarInscripcion() {
       await eventsStore.cancelarInscripcion(actividad.value._id);
       estaInscrito.value = false;
       actividad.value.spotsAvailable++;
+      actividad.value.registeredCount = Math.max(0, (actividad.value.registeredCount || 1) - 1);
       mensajeAccion.value = { tipo: 'exito', texto: 'Inscripción cancelada exitosamente.' };
     } else {
       await eventsStore.inscribirse(actividad.value._id);
       estaInscrito.value = true;
       actividad.value.spotsAvailable--;
-      mensajeAccion.value = { tipo: 'exito', texto: 'Te has inscrito exitosamente a la actividad.' };
+      actividad.value.registeredCount = (actividad.value.registeredCount || 0) + 1;
+      mensajeAccion.value = { tipo: 'exito', texto: 'Te has inscrito exitosamente. Tu cupo está confirmado.' };
     }
   } catch (err: unknown) {
     const fetchError = err as { data?: { message?: string } };
@@ -107,10 +103,6 @@ async function alternarInscripcion() {
   }
 }
 
-/**
- * Marca o quita la actividad actual de los favoritos del usuario,
- * según su estado actual. Redirige a login si no está autenticado.
- */
 async function alternarFavorito() {
   if (!authStore.estaAutenticado) {
     navigateTo(`/login?redirect=${encodeURIComponent(route.fullPath)}`);
@@ -129,7 +121,7 @@ async function alternarFavorito() {
     } else {
       await eventsStore.marcarFavorito(actividad.value._id);
       esFavorito.value = true;
-      mensajeAccion.value = { tipo: 'exito', texto: 'Guardado en tus favoritos.' };
+      mensajeAccion.value = { tipo: 'exito', texto: 'Guardado en tus actividades favoritas.' };
     }
   } catch (err: unknown) {
     const fetchError = err as { data?: { message?: string } };
@@ -142,7 +134,6 @@ async function alternarFavorito() {
   }
 }
 
-// Fecha de la actividad formateada en español (ej. "lunes, 3 de marzo de 2026")
 const fechaFormateada = computed(() => {
   if (!actividad.value?.date) return '';
   const fecha = new Date(actividad.value.date);
@@ -154,366 +145,649 @@ const fechaFormateada = computed(() => {
   }).format(fecha);
 });
 
-// Indica si la actividad ya no tiene cupos disponibles
 const sinCupo = computed(() => (actividad.value?.spotsAvailable ?? 0) <= 0);
+
+const ocupacion = computed(() => {
+  if (!actividad.value || !actividad.value.capacity || actividad.value.capacity <= 0) return 0;
+  return Math.min(Math.round((actividad.value.registeredCount / actividad.value.capacity) * 100), 100);
+});
+
+const categoryStyle = computed(() => useCategoryStyle(actividad.value?.category?.name));
+
+const organizadorNombre = computed(() => {
+  if (!actividad.value?.organizer) return 'Organizador Comunitario';
+  return `${actividad.value.organizer.firstName || ''} ${actividad.value.organizer.lastName || ''}`.trim() || 'Organizador';
+});
+
+const organizadorIniciales = computed(() => {
+  const f = actividad.value?.organizer?.firstName?.[0] || '';
+  const l = actividad.value?.organizer?.lastName?.[0] || '';
+  return `${f}${l}`.toUpperCase() || 'ORG';
+});
 </script>
 
 <template>
   <div class="activity-detail-page">
     <div class="activity-detail-container">
       <NuxtLink to="/actividades" class="back-link">
-        ← Volver a actividades
+        <ArrowLeft :size="15" :stroke-width="2.2" /> Volver a actividades
       </NuxtLink>
 
       <div v-if="cargando" class="state-message" role="status">
-        Cargando detalles de la actividad…
+        Cargando detalles de la actividad...
       </div>
 
       <div v-else-if="error || !actividad" class="state-message state-message--error" role="alert">
         <p>{{ error || 'Actividad no encontrada' }}</p>
-        <NuxtLink to="/actividades" class="submit-btn back-btn">
+        <NuxtLink to="/actividades" class="pill-btn pill-btn--primary back-btn">
           Ver todas las actividades
         </NuxtLink>
       </div>
 
-      <article v-else class="activity-card">
-        <header class="activity-header">
-          <div class="activity-header__top">
-            <div class="activity-header__tags">
-              <span class="activity-category">{{ actividad.category?.name ?? 'General' }}</span>
-              <span class="activity-status" :class="`activity-status--${actividad.status}`">
-                {{ actividad.status === 'active' ? 'Activa' : actividad.status === 'cancelled' ? 'Cancelada' :
-                'Finalizada' }}
+      <div v-else class="activity-layout" :class="categoryStyle.className">
+        <!-- COLUMNA PRINCIPAL: DOSSIER DE LA ACTIVIDAD -->
+        <article class="activity-dossier">
+          <header class="dossier-header">
+            <div class="dossier-header__badges">
+              <span class="dossier-category">
+                <span class="dossier-category__dot" />
+                {{ actividad.category?.name ?? 'Comunidad' }}
+              </span>
+
+              <span class="dossier-status" :class="`dossier-status--${actividad.status}`">
+                <span class="status-dot" />
+                {{ actividad.status === 'active' ? 'Activa' : actividad.status === 'cancelled' ? 'Cancelada' : 'Finalizada' }}
               </span>
             </div>
 
-            <button class="fav-btn" :class="{ 'fav-btn--active': esFavorito }" :disabled="procesandoAccion"
-              @click="alternarFavorito" :title="esFavorito ? 'Quitar de favoritos' : 'Guardar en favoritos'">
-              {{ esFavorito ? 'Guardado' : 'Guardar' }}
-            </button>
+            <h1 class="dossier-title">{{ actividad.title }}</h1>
+
+            <div class="dossier-organizer">
+              <div class="dossier-organizer__avatar">{{ organizadorIniciales }}</div>
+              <div class="dossier-organizer__info">
+                <span class="dossier-organizer__label">Organizado por</span>
+                <strong class="dossier-organizer__name">{{ organizadorNombre }}</strong>
+              </div>
+            </div>
+          </header>
+
+          <!-- Banner de feedback de inscripción / favorito -->
+          <div v-if="mensajeAccion" class="action-banner" :class="`action-banner--${mensajeAccion.tipo}`">
+            <Check v-if="mensajeAccion.tipo === 'exito'" :size="16" :stroke-width="2.2" />
+            <CircleX v-else :size="16" :stroke-width="2.2" />
+            <span>{{ mensajeAccion.texto }}</span>
           </div>
 
-          <h1 class="activity-title">{{ actividad.title }}</h1>
-        </header>
+          <!-- Cuadrícula de coordenadas y metadatos de encuentro -->
+          <div class="dossier-meta-grid">
+            <div class="dossier-meta-item">
+              <div class="dossier-meta-icon"><CalendarDays :size="20" :stroke-width="2" /></div>
+              <div>
+                <strong>Fecha</strong>
+                <p>{{ fechaFormateada }}</p>
+              </div>
+            </div>
 
-        <div v-if="mensajeAccion" class="action-banner" :class="`action-banner--${mensajeAccion.tipo}`">
-          {{ mensajeAccion.texto }}
-        </div>
+            <div class="dossier-meta-item">
+              <div class="dossier-meta-icon"><Clock :size="20" :stroke-width="2" /></div>
+              <div>
+                <strong>Horario</strong>
+                <p>{{ actividad.time || 'Por confirmar' }}</p>
+              </div>
+            </div>
 
-        <div class="activity-meta">
-          <div class="meta-item">
-            <div>
-              <strong>Fecha y hora</strong>
-              <p>{{ fechaFormateada }} a las {{ actividad.time }}</p>
+            <div class="dossier-meta-item">
+              <div class="dossier-meta-icon"><MapPin :size="20" :stroke-width="2" /></div>
+              <div>
+                <strong>Punto de encuentro</strong>
+                <p>{{ actividad.location }}</p>
+              </div>
             </div>
           </div>
 
-          <div class="meta-item">
-            <div>
-              <strong>Ubicación</strong>
-              <p>{{ actividad.location }}</p>
-            </div>
-          </div>
+          <!-- Descripción detallada -->
+          <section class="dossier-description">
+            <h2>Acerca de esta actividad</h2>
+            <p>{{ actividad.description }}</p>
+          </section>
 
-          <div class="meta-item">
-            <div>
-              <strong>Organizador</strong>
-              <p>{{ actividad.organizer?.firstName }} {{ actividad.organizer?.lastName }}</p>
+          <!-- Compromiso comunitario -->
+          <section class="dossier-community-note">
+            <div class="community-note-icon">
+              <ShieldCheck :size="20" :stroke-width="2" />
             </div>
-          </div>
-
-          <div class="meta-item">
             <div>
-              <strong>Cupos disponibles</strong>
-              <p :class="{ 'spots--full': sinCupo }">
-                {{ sinCupo ? 'Sin cupos disponibles' : `${actividad.spotsAvailable} de ${actividad.capacity} cupos
-                libres` }}
+              <h3>Participación en Comunidad</h3>
+              <p>
+                Al inscribirte te comprometes a asistir puntualmente. Si no puedes acudir, cancela tu inscripción desde este mismo panel para liberar tu cupo a otra persona.
               </p>
             </div>
+          </section>
+        </article>
+
+        <!-- COLUMNA LATERAL: PASE DE PARTICIPACIÓN (STICKY) -->
+        <aside class="activity-sidebar">
+          <div class="reservation-box">
+            <div class="reservation-box__top">
+              <span class="reservation-box__badge">
+                <Sparkles :size="13" :stroke-width="2.2" /> Pase de Actividad
+              </span>
+
+              <button
+                type="button"
+                class="fav-toggle-btn"
+                :class="{ 'fav-toggle-btn--active': esFavorito }"
+                :disabled="procesandoAccion"
+                :title="esFavorito ? 'Quitar de favoritos' : 'Guardar en favoritos'"
+                @click="alternarFavorito"
+              >
+                <Heart :size="16" :stroke-width="2.2" :fill="esFavorito ? 'currentColor' : 'none'" />
+              </button>
+            </div>
+
+            <!-- Medidor de capacidad -->
+            <div class="reservation-capacity">
+              <div class="reservation-capacity__header">
+                <span class="reservation-capacity__label">
+                  <Users :size="14" :stroke-width="2.2" />
+                  {{ actividad.registeredCount }} de {{ actividad.capacity }} inscritos
+                </span>
+                <span class="reservation-capacity__pct">{{ ocupacion }}%</span>
+              </div>
+
+              <div class="reservation-capacity__bar">
+                <div
+                  class="reservation-capacity__fill"
+                  :class="{ 'reservation-capacity__fill--full': sinCupo }"
+                  :style="{ width: `${ocupacion}%` }"
+                />
+              </div>
+
+              <div class="reservation-capacity__spots" :class="{ 'spots--full': sinCupo }">
+                <component :is="sinCupo ? CircleX : CircleCheck" :size="14" :stroke-width="2.2" />
+                <span>{{ sinCupo ? 'Cupos agotados para esta actividad' : `${actividad.spotsAvailable} cupos disponibles ahora` }}</span>
+              </div>
+            </div>
+
+            <!-- Botones de acción según autenticación y rol -->
+            <div v-if="!authStore.estaAutenticado" class="reservation-auth-prompt">
+              <p>Inicia sesión o regístrate para asegurar tu lugar en esta actividad.</p>
+              <NuxtLink
+                :to="`/login?redirect=${encodeURIComponent(route.fullPath)}`"
+                class="pill-btn pill-btn--primary reservation-btn"
+              >
+                Iniciar sesión para inscribirme
+              </NuxtLink>
+            </div>
+
+            <template v-else>
+              <button
+                v-if="!estaInscrito"
+                class="pill-btn pill-btn--primary reservation-btn"
+                :disabled="sinCupo || actividad.status !== 'active' || procesandoAccion"
+                @click="alternarInscripcion"
+              >
+                {{ procesandoAccion ? 'Procesando...' : sinCupo ? 'Cupos agotados' : 'Inscribirme a esta actividad' }}
+              </button>
+
+              <button
+                v-else
+                class="pill-btn pill-btn--danger reservation-btn"
+                :disabled="procesandoAccion"
+                @click="alternarInscripcion"
+              >
+                {{ procesandoAccion ? 'Cancelando...' : 'Cancelar mi inscripción' }}
+              </button>
+            </template>
           </div>
-        </div>
-
-        <section class="activity-description">
-          <h2>Descripción</h2>
-          <p>{{ actividad.description }}</p>
-        </section>
-
-        <footer class="activity-actions">
-          <div v-if="!authStore.estaAutenticado" class="auth-prompt">
-            <p>Inicia sesión o regístrate para inscribirte en esta actividad.</p>
-            <NuxtLink :to="`/login?redirect=${encodeURIComponent(route.fullPath)}`" class="action-btn action-btn--primary">Iniciar Sesión</NuxtLink>
-          </div>
-
-          <template v-else>
-            <button v-if="!estaInscrito" class="action-btn action-btn--primary"
-              :disabled="sinCupo || actividad.status !== 'active' || procesandoAccion" @click="alternarInscripcion">
-              {{ procesandoAccion ? 'Procesando…' : sinCupo ? 'Cupos Agotados' : 'Inscribirse a esta Actividad' }}
-            </button>
-
-            <button v-else class="action-btn action-btn--danger" :disabled="procesandoAccion"
-              @click="alternarInscripcion">
-              {{ procesandoAccion ? 'Procesando…' : 'Cancelar mi Inscripción' }}
-            </button>
-          </template>
-        </footer>
-      </article>
+        </aside>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .activity-detail-page {
-  min-height: 100vh;
-  background: var(--ch-ink-2);
-  padding: 3rem 1.5rem;
+  min-height: calc(100vh - 4.5rem);
+  background: radial-gradient(circle at 50% 0%, var(--ch-ink-soft) 0%, var(--ch-ink-2) 100%);
+  padding: 2.75rem 1.5rem 5rem;
   color: var(--ch-text-on-ink);
 }
 
 .activity-detail-container {
-  max-width: 48rem;
+  max-width: 76rem;
   margin: 0 auto;
 }
 
 .back-link {
-  display: inline-block;
-  color: var(--ch-marigold);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--ch-text-on-ink-muted);
   text-decoration: none;
   font-family: var(--ch-font-mono);
-  font-size: 0.9rem;
+  font-size: 0.84rem;
   margin-bottom: 2rem;
-  transition: opacity 0.15s ease;
+  transition: color 0.15s ease;
 }
 
 .back-link:hover {
-  opacity: 0.8;
+  color: var(--ch-coral-light);
 }
 
 .state-message {
   text-align: center;
-  padding: 4rem 1rem;
+  padding: 4.5rem 1rem;
   color: var(--ch-text-on-ink-muted);
+  font-size: 1.05rem;
 }
 
 .state-message--error {
-  color: var(--ch-text-on-ink);
+  color: var(--ch-rose);
 }
 
 .back-btn {
-  display: inline-flex;
   margin-top: 1.5rem;
-  width: auto;
-  padding: 0.6rem 1.5rem;
 }
 
-.activity-card {
+.activity-layout {
+  display: grid;
+  grid-template-columns: 1fr 22rem;
+  gap: 2rem;
+  align-items: start;
+}
+
+/* Columna principal */
+.activity-dossier {
   background: var(--ch-paper);
-  color: var(--ch-text-on-paper);
+  border: 1px solid var(--ch-line);
   border-radius: var(--ch-radius-md);
   padding: 2.5rem;
-  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--ch-shadow-md);
+  position: relative;
+  overflow: hidden;
 }
 
-.activity-header__top {
+.activity-dossier::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--cat-color, var(--ch-coral)), var(--ch-marigold));
+}
+
+.dossier-header__badges {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  gap: 0.65rem;
+  margin-bottom: 1.25rem;
 }
 
-.activity-header__tags {
-  display: flex;
-  gap: 0.5rem;
+.dossier-category {
+  display: inline-flex;
   align-items: center;
-}
-
-.fav-btn {
-  background: transparent;
-  border: 1px solid var(--ch-line);
-  padding: 0.4rem 0.8rem;
-  border-radius: 999px;
-  cursor: pointer;
-  font-size: 0.85rem;
+  gap: 0.4rem;
   font-family: var(--ch-font-mono);
-  transition: all 0.2s ease;
-}
-
-.fav-btn--active {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: #ef4444;
-  color: #dc2626;
-}
-
-.activity-category {
-  font-family: var(--ch-font-mono);
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 0.3rem 0.75rem;
-  border-radius: 999px;
-  background: rgba(255, 107, 74, 0.12);
-  color: var(--ch-coral-dark);
+  font-weight: 600;
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--ch-radius-full);
+  background: rgba(124, 92, 252, 0.12);
+  color: var(--cat-color, var(--ch-coral-light));
+  border: 1px solid rgba(124, 92, 252, 0.3);
 }
 
-.activity-status {
+.dossier-category__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.dossier-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   font-family: var(--ch-font-mono);
-  font-size: 0.75rem;
-  padding: 0.3rem 0.75rem;
-  border-radius: 999px;
+  font-size: 0.74rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--ch-radius-full);
   background: rgba(16, 185, 129, 0.12);
-  color: #047857;
+  color: var(--ch-leaf);
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
-.activity-status--cancelled {
-  background: rgba(239, 68, 68, 0.12);
-  color: #b91c1c;
+.dossier-status--cancelled {
+  background: rgba(244, 63, 94, 0.12);
+  color: var(--ch-rose);
+  border-color: rgba(244, 63, 94, 0.3);
 }
 
-.activity-status--finished {
-  background: rgba(107, 114, 128, 0.12);
-  color: #4b5563;
+.dossier-status--finished {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--ch-text-on-paper-muted);
+  border-color: var(--ch-line-strong);
 }
 
-.activity-title {
-  font-family: var(--ch-font-display);
-  font-weight: 400;
-  font-size: clamp(1.8rem, 4vw, 2.4rem);
-  margin: 0 0 1.5rem;
-  line-height: 1.2;
+.status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.dossier-title {
+  font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+  line-height: 1.15;
+  margin: 0 0 1.25rem;
+  color: #ffffff;
+}
+
+.dossier-organizer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-paper-2);
+  border: 1px solid var(--ch-line);
+  margin-bottom: 2rem;
+  width: fit-content;
+}
+
+.dossier-organizer__avatar {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--ch-coral) 0%, var(--ch-marigold) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--ch-font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #04060c;
+}
+
+.dossier-organizer__info {
+  display: flex;
+  flex-direction: column;
+}
+
+.dossier-organizer__label {
+  font-size: 0.72rem;
+  color: var(--ch-text-on-paper-dim);
+  font-family: var(--ch-font-mono);
+  text-transform: uppercase;
+}
+
+.dossier-organizer__name {
+  font-size: 0.92rem;
+  color: #ffffff;
 }
 
 .action-banner {
-  padding: 0.8rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 1.15rem;
   border-radius: var(--ch-radius-sm);
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
+  margin-bottom: 1.75rem;
+  font-size: 0.92rem;
+  font-weight: 500;
 }
 
 .action-banner--exito {
   background: rgba(16, 185, 129, 0.15);
-  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
 }
 
 .action-banner--error {
-  background: rgba(239, 68, 68, 0.15);
-  color: #b91c1c;
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  color: #fca5a5;
 }
 
-.activity-meta {
+.dossier-meta-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-  gap: 1.5rem;
-  padding: 1.5rem 0;
+  gap: 1.25rem;
+  padding: 1.75rem 0;
   border-top: 1px dashed var(--ch-line);
   border-bottom: 1px dashed var(--ch-line);
   margin-bottom: 2rem;
 }
 
-.meta-item {
+.dossier-meta-item {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
 }
 
-.meta-icon {
-  font-size: 1.25rem;
-  line-height: 1;
+.dossier-meta-icon {
+  color: var(--ch-coral-light);
+  background: rgba(124, 92, 252, 0.1);
+  padding: 0.5rem;
+  border-radius: var(--ch-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.meta-item strong {
+.dossier-meta-item strong {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   font-family: var(--ch-font-mono);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   color: var(--ch-text-on-paper-muted);
   margin-bottom: 0.2rem;
 }
 
-.meta-item p {
+.dossier-meta-item p {
   margin: 0;
-  font-size: 0.95rem;
-  color: var(--ch-text-on-paper);
+  font-size: 0.96rem;
+  color: #ffffff;
 }
 
-.spots--full {
-  color: var(--ch-error);
-  font-weight: 600;
+.dossier-description {
+  margin-bottom: 2rem;
 }
 
-.activity-description h2 {
-  font-family: var(--ch-font-display);
-  font-size: 1.3rem;
-  margin: 0 0 0.8rem;
+.dossier-description h2 {
+  font-size: 1.25rem;
+  margin: 0 0 0.85rem;
+  color: #ffffff;
 }
 
-.activity-description p {
+.dossier-description p {
   margin: 0;
-  line-height: 1.6;
+  line-height: 1.7;
   color: var(--ch-text-on-paper-muted);
   font-size: 1.02rem;
+  white-space: pre-line;
 }
 
-.activity-actions {
-  margin-top: 2.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--ch-line);
-}
-
-.auth-prompt {
+.dossier-community-note {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 1rem;
-  background: var(--ch-sand-light);
-  padding: 1rem 1.25rem;
+  padding: 1.25rem 1.4rem;
   border-radius: var(--ch-radius-sm);
+  background: rgba(15, 21, 40, 0.6);
+  border: 1px solid var(--ch-line);
 }
 
-.action-btn {
+.community-note-icon {
+  color: var(--ch-leaf);
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.dossier-community-note h3 {
+  font-size: 0.95rem;
+  margin: 0 0 0.25rem;
+  color: #ffffff;
+}
+
+.dossier-community-note p {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--ch-text-on-paper-muted);
+}
+
+/* Barra lateral */
+.activity-sidebar {
+  position: sticky;
+  top: 5.5rem;
+}
+
+.reservation-box {
+  background: var(--ch-paper);
+  border: 1px solid var(--ch-line);
+  border-radius: var(--ch-radius-md);
+  padding: 1.75rem;
+  box-shadow: var(--ch-shadow-lg);
+}
+
+.reservation-box__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.reservation-box__badge {
   display: inline-flex;
   align-items: center;
+  gap: 0.4rem;
+  font-family: var(--ch-font-mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ch-marigold);
+}
+
+.fav-toggle-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--ch-line-strong);
+  color: var(--ch-text-on-paper-muted);
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 0.75rem 1.75rem;
-  border-radius: 999px;
-  font-weight: 600;
-  text-decoration: none;
   cursor: pointer;
-  border: none;
   transition: all 0.2s ease;
 }
 
-.action-btn--primary {
-  background: var(--ch-coral);
+.fav-toggle-btn:hover {
+  border-color: var(--ch-rose);
+  color: var(--ch-rose);
+  background: rgba(244, 63, 94, 0.1);
+  transform: scale(1.05);
+}
+
+.fav-toggle-btn--active {
+  background: rgba(244, 63, 94, 0.15);
+  border-color: var(--ch-rose);
+  color: var(--ch-rose);
+}
+
+.reservation-capacity {
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px dashed var(--ch-line);
+}
+
+.reservation-capacity__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.reservation-capacity__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.84rem;
+  color: var(--ch-text-on-paper-muted);
+}
+
+.reservation-capacity__pct {
+  font-family: var(--ch-font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
   color: #ffffff;
 }
 
-.action-btn--primary:hover:not(:disabled) {
-  background: var(--ch-coral-dark);
+.reservation-capacity__bar {
+  height: 7px;
+  border-radius: var(--ch-radius-full);
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin-bottom: 0.65rem;
 }
 
-.action-btn--danger {
-  background: #ef4444;
-  color: #ffffff;
+.reservation-capacity__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ch-coral) 0%, var(--ch-marigold) 100%);
+  border-radius: var(--ch-radius-full);
+  transition: width 0.4s ease;
 }
 
-.action-btn--danger:hover:not(:disabled) {
-  background: #dc2626;
+.reservation-capacity__fill--full {
+  background: var(--ch-error);
 }
 
-.action-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.reservation-capacity__spots {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-family: var(--ch-font-mono);
+  color: var(--ch-leaf);
+}
+
+.spots--full {
+  color: var(--ch-rose);
+  font-weight: 600;
+}
+
+.reservation-auth-prompt p {
+  font-size: 0.88rem;
+  color: var(--ch-text-on-paper-muted);
+  margin-bottom: 1rem;
+}
+
+.reservation-btn {
+  width: 100%;
+  padding: 0.85rem 1.25rem;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 940px) {
+  .activity-layout {
+    grid-template-columns: 1fr;
+  }
+  .activity-sidebar {
+    position: static;
+  }
 }
 
 @media (max-width: 640px) {
-  .activity-card {
+  .activity-dossier {
     padding: 1.5rem;
-  }
-
-  .auth-prompt {
-    flex-direction: column;
-    align-items: stretch;
-    text-align: center;
   }
 }
 </style>

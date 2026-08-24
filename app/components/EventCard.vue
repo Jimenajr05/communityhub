@@ -1,247 +1,439 @@
-<!-- Tarjeta que muestra la información resumida de una actividad/evento en listados -->
+<!-- Tarjeta rediseñada de actividad: estética de nodo de encuentro, medidor de cupos dinámico y auras de categoría -->
 <script setup lang="ts">
+import { MapPin, Clock, ArrowUpRight, CheckCircle2, AlertCircle, Sparkles } from 'lucide-vue-next';
 import { useCategoryStyle } from '~/composables/useCategoryStyle';
 import type { Actividad } from '~/stores/events';
 
-// Prop: la actividad a mostrar en la tarjeta
-const props = defineProps<{ actividad: Actividad }>();
+const props = withDefaults(defineProps<{ actividad: Actividad; featured?: boolean }>(), {
+  featured: false,
+});
 
-// Estilo visual (clase CSS/etiqueta) según la categoría de la actividad
 const categoryStyle = computed(() => useCategoryStyle(props.actividad.category?.name));
 
-// Fecha formateada en día y mes corto (es-CR) para el chip de fecha
 const fechaCorta = computed(() => {
   const fecha = new Date(props.actividad.date);
   return {
     dia: new Intl.DateTimeFormat('es-CR', { day: 'numeric' }).format(fecha),
-    mes: new Intl.DateTimeFormat('es-CR', { month: 'short' }).format(fecha).replace('.', ''),
+    mes: new Intl.DateTimeFormat('es-CR', { month: 'short' }).format(fecha).replace('.', '').toUpperCase(),
   };
 });
 
-// Porcentaje de ocupación de la actividad (inscritos sobre capacidad), limitado a 100%
 const ocupacion = computed(() => {
   const { capacity, registeredCount } = props.actividad;
-  if (capacity <= 0) return 0;
+  if (!capacity || capacity <= 0) return 0;
   return Math.min(Math.round((registeredCount / capacity) * 100), 100);
 });
 
-// Indica si ya no quedan cupos disponibles para inscribirse
-const sinCupo = computed(() => props.actividad.spotsAvailable <= 0);
+const sinCupo = computed(() => (props.actividad.spotsAvailable ?? 0) <= 0);
+
+const organizadorIniciales = computed(() => {
+  const f = props.actividad.organizer?.firstName?.[0] || '';
+  const l = props.actividad.organizer?.lastName?.[0] || '';
+  return `${f}${l}`.toUpperCase() || 'ORG';
+});
 </script>
 
 <template>
-  <NuxtLink :to="`/actividad/${actividad._id}`" class="event-card">
-    <div class="event-card__cover" :class="categoryStyle.className">
-      <div class="event-card__cover-grid" aria-hidden="true" />
+  <NuxtLink
+    :to="`/actividad/${actividad._id}`"
+    class="event-node-card"
+    :class="[categoryStyle.className, { 'event-node-card--featured': featured }]"
+  >
+    <!-- Cabecera de la tarjeta con aura de color e indicador de fecha -->
+    <div class="event-node-card__cover">
+      <div class="ch-constellation event-node-card__cover-pattern" aria-hidden="true" />
+      <div class="event-node-card__glow-layer" />
 
-      <span class="event-card__date-chip">
-        <strong>{{ fechaCorta.dia }}</strong>
-        <span>{{ fechaCorta.mes }}</span>
+      <!-- Chip de fecha tipo sello técnico -->
+      <div class="event-node-card__date-stamp">
+        <span class="event-node-card__date-day">{{ fechaCorta.dia }}</span>
+        <span class="event-node-card__date-month">{{ fechaCorta.mes }}</span>
+      </div>
+
+      <!-- Badge de categoría -->
+      <span class="event-node-card__cat-badge">
+        <span class="event-node-card__cat-dot" />
+        {{ actividad.category?.name ?? 'Comunidad' }}
       </span>
 
-      <span class="event-card__category-chip">{{ actividad.category?.name ?? 'General' }}</span>
+      <!-- Distintivo para actividad destacada -->
+      <span v-if="featured" class="event-node-card__featured-badge">
+        <Sparkles :size="13" :stroke-width="2.2" /> Destacada
+      </span>
+
+      <!-- Flecha de acceso rápido en hover -->
+      <span class="event-node-card__action-arrow" aria-hidden="true">
+        <ArrowUpRight :size="16" :stroke-width="2.4" />
+      </span>
     </div>
 
-    <div class="event-card__body">
-      <h3 class="event-card__title">{{ actividad.title }}</h3>
-      <p class="event-card__meta">{{ actividad.time }} &nbsp;·&nbsp; {{ actividad.location }}</p>
+    <!-- Cuerpo de información -->
+    <div class="event-node-card__body">
+      <h3 class="event-node-card__title">{{ actividad.title }}</h3>
+      <p v-if="featured && actividad.description" class="event-node-card__desc">
+        {{ actividad.description }}
+      </p>
 
-      <div class="event-card__footer">
-        <div class="event-card__capacity">
-          <div class="event-card__bar">
+      <div class="event-node-card__meta-list">
+        <span v-if="actividad.time" class="event-node-card__meta-item">
+          <Clock :size="13" :stroke-width="2.2" />
+          {{ actividad.time }}
+        </span>
+        <span class="event-node-card__meta-item">
+          <MapPin :size="13" :stroke-width="2.2" />
+          <span class="meta-location-text">{{ actividad.location }}</span>
+        </span>
+      </div>
+
+      <!-- Pie con medidor de capacidad y organizador -->
+      <div class="event-node-card__footer">
+        <div class="event-node-card__capacity">
+          <div class="event-node-card__progress-wrap">
             <div
-              class="event-card__bar-fill"
-              :class="{ 'event-card__bar-fill--full': sinCupo }"
+              class="event-node-card__progress-bar"
+              :class="{ 'event-node-card__progress-bar--full': sinCupo }"
               :style="{ width: `${ocupacion}%` }"
             />
           </div>
-          <span class="event-card__spots" :class="{ 'event-card__spots--full': sinCupo }">
-            {{ sinCupo ? 'Sin cupo' : `${actividad.spotsAvailable} cupos libres` }}
-          </span>
+          <div class="event-node-card__capacity-label">
+            <span v-if="sinCupo" class="status-alert">
+              <AlertCircle :size="11" :stroke-width="2.4" /> Sin cupo disponible
+            </span>
+            <span v-else class="status-available">
+              <CheckCircle2 :size="11" :stroke-width="2.4" /> {{ actividad.spotsAvailable }} cupos libres
+            </span>
+          </div>
         </div>
 
-        <span class="event-card__organizer">
-          {{ actividad.organizer?.firstName }} {{ actividad.organizer?.lastName }}
-        </span>
+        <div class="event-node-card__organizer" :title="`Organizado por ${actividad.organizer?.firstName || 'Comunidad'}`">
+          <span class="event-node-card__organizer-avatar">{{ organizadorIniciales }}</span>
+          <span class="event-node-card__organizer-name">
+            {{ actividad.organizer?.firstName }} {{ actividad.organizer?.lastName }}
+          </span>
+        </div>
       </div>
     </div>
   </NuxtLink>
 </template>
 
 <style scoped>
-.event-card {
-  display: block;
+.event-node-card {
+  display: flex;
+  flex-direction: column;
   background: var(--ch-paper);
+  border: 1px solid var(--ch-line);
   border-radius: var(--ch-radius-md);
   overflow: hidden;
   text-decoration: none;
   color: inherit;
-  box-shadow: 0 12px 30px -18px rgba(0, 0, 0, 0.45);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: var(--ch-shadow-sm);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
 }
 
-.event-card:hover {
+.event-node-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 20px 38px -16px rgba(0, 0, 0, 0.5);
+  border-color: var(--ch-line-strong);
+  box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.7), 0 0 20px -6px rgba(124, 92, 252, 0.25);
 }
 
-.event-card:focus-visible {
-  outline: 3px solid var(--ch-marigold);
+.event-node-card:focus-visible {
+  outline: 2px solid var(--ch-coral-light);
   outline-offset: 2px;
 }
 
-.event-card__cover {
+/* Cabecera visual */
+.event-node-card__cover {
   position: relative;
-  height: 6.5rem;
+  height: 6.8rem;
+  background: radial-gradient(circle at 75% 20%, var(--ch-paper-3) 0%, var(--ch-paper-2) 100%);
+  border-bottom: 1px solid var(--ch-line);
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.event-card__cover-grid {
+.event-node-card--featured .event-node-card__cover {
+  height: 9.5rem;
+}
+
+.event-node-card__cover-pattern {
+  opacity: 0.45;
+}
+
+.event-node-card__glow-layer {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.22) 1.3px, transparent 1.3px);
-  background-size: 16px 16px;
-  opacity: 0.5;
+  background: radial-gradient(circle at 10% 10%, currentColor 0%, transparent 65%);
+  opacity: 0.16;
+  transition: opacity 0.25s ease;
 }
 
-.event-card__cover-emoji {
-  font-size: 2.6rem;
-  transform: rotate(-6deg);
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.25));
+.event-node-card:hover .event-node-card__glow-layer {
+  opacity: 0.26;
 }
 
-.event-card__date-chip {
+/* Sello de fecha */
+.event-node-card__date-stamp {
   position: absolute;
-  top: 0.7rem;
-  right: 0.7rem;
-  background: var(--ch-paper);
-  color: var(--ch-text-on-paper);
+  top: 0.8rem;
+  right: 0.8rem;
+  z-index: 2;
+  background: rgba(4, 6, 12, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--ch-line-strong);
   border-radius: var(--ch-radius-sm);
-  padding: 0.3rem 0.55rem;
+  padding: 0.35rem 0.6rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  line-height: 1.05;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  line-height: 1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
-.event-card__date-chip strong {
+.event-node-card__date-day {
   font-family: var(--ch-font-display);
-  font-weight: 400;
-  font-size: 1rem;
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: #ffffff;
 }
 
-.event-card__date-chip span {
+.event-node-card__date-month {
   font-family: var(--ch-font-mono);
   font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ch-text-on-paper-muted);
+  letter-spacing: 0.08em;
+  color: var(--ch-marigold);
+  font-weight: 600;
+  margin-top: 0.15rem;
 }
 
-.event-card__category-chip {
+/* Badge de categoría */
+.event-node-card__cat-badge {
   position: absolute;
-  left: 0.7rem;
-  bottom: 0.6rem;
+  left: 0.8rem;
+  bottom: 0.8rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   font-family: var(--ch-font-mono);
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.22);
-  padding: 0.28rem 0.6rem;
-  border-radius: 999px;
+  font-weight: 600;
+  color: currentColor;
+  background: rgba(4, 6, 12, 0.75);
+  backdrop-filter: blur(6px);
+  border: 1px solid currentColor;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--ch-radius-full);
 }
 
-.cover--talleres {
-  background: linear-gradient(135deg, var(--ch-coral) 0%, var(--ch-coral-dark) 100%);
-}
-.cover--deportes {
-  background: linear-gradient(135deg, var(--ch-teal) 0%, var(--ch-teal-dark) 100%);
-}
-.cover--arte {
-  background: linear-gradient(135deg, var(--ch-rose) 0%, var(--ch-rose-dark) 100%);
-}
-.cover--networking {
-  background: linear-gradient(135deg, var(--ch-violet) 0%, var(--ch-violet-dark) 100%);
-}
-.cover--voluntariado {
-  background: linear-gradient(135deg, var(--ch-leaf) 0%, var(--ch-leaf-dark) 100%);
-}
-.cover--default {
-  background: linear-gradient(135deg, var(--ch-marigold) 0%, var(--ch-coral) 100%);
+.event-node-card__cat-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
-.event-card__body {
-  padding: 1.1rem 1.35rem 1.3rem;
+.event-node-card__featured-badge {
+  position: absolute;
+  left: 0.8rem;
+  top: 0.8rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--ch-font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #04060c;
+  background: var(--ch-marigold);
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--ch-radius-full);
+  box-shadow: 0 4px 12px var(--ch-marigold-glow);
 }
 
-.event-card__title {
+.event-node-card__action-arrow {
+  position: absolute;
+  right: 0.8rem;
+  bottom: 0.8rem;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--ch-line-strong);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.event-node-card:hover .event-node-card__action-arrow {
+  opacity: 1;
+  transform: scale(1);
+  background: var(--ch-coral);
+}
+
+/* Cuerpo de la tarjeta */
+.event-node-card__body {
+  padding: 1.25rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.event-node-card--featured .event-node-card__body {
+  padding: 1.5rem 1.75rem;
+}
+
+.event-node-card__title {
   font-family: var(--ch-font-display);
-  font-weight: 400;
+  font-weight: 600;
   font-size: 1.15rem;
-  line-height: 1.25;
+  line-height: 1.3;
   margin: 0 0 0.5rem;
   color: var(--ch-text-on-paper);
+  transition: color 0.15s ease;
 }
 
-.event-card__meta {
-  margin: 0 0 1.05rem;
-  font-size: 0.85rem;
+.event-node-card:hover .event-node-card__title {
+  color: #ffffff;
+}
+
+.event-node-card--featured .event-node-card__title {
+  font-size: 1.55rem;
+}
+
+.event-node-card__desc {
+  margin: 0 0 0.85rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--ch-text-on-paper-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.event-node-card__meta-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem;
+  margin: 0 0 1.1rem;
+  font-size: 0.82rem;
   color: var(--ch-text-on-paper-muted);
 }
 
-.event-card__footer {
+.event-node-card__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.event-node-card__meta-item svg {
+  color: var(--ch-coral-light);
+  flex-shrink: 0;
+}
+
+.meta-location-text {
+  max-width: 14rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Pie con capacidad y organizador */
+.event-node-card__footer {
+  margin-top: auto;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--ch-line);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding-top: 0.85rem;
-  border-top: 1px dashed var(--ch-line);
 }
 
-.event-card__capacity {
+.event-node-card__capacity {
   flex: 1;
   min-width: 0;
 }
 
-.event-card__bar {
+.event-node-card__progress-wrap {
   height: 5px;
-  border-radius: 999px;
-  background: var(--ch-paper-2);
+  border-radius: var(--ch-radius-full);
+  background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
   margin-bottom: 0.35rem;
 }
 
-.event-card__bar-fill {
+.event-node-card__progress-bar {
   height: 100%;
-  background: var(--ch-coral);
-  border-radius: 999px;
+  background: currentColor;
+  border-radius: var(--ch-radius-full);
+  transition: width 0.3s ease;
 }
 
-.event-card__bar-fill--full {
-  background: var(--ch-error);
+.event-node-card__progress-bar--full {
+  background: var(--ch-error) !important;
 }
 
-.event-card__spots {
-  font-size: 0.76rem;
-  color: var(--ch-text-on-paper-muted);
+.event-node-card__capacity-label {
+  font-size: 0.74rem;
+  font-family: var(--ch-font-mono);
 }
 
-.event-card__spots--full {
-  color: var(--ch-error);
+.status-available {
+  color: var(--ch-leaf);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.status-alert {
+  color: var(--ch-rose);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   font-weight: 600;
 }
 
-.event-card__organizer {
+.event-node-card__organizer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   font-size: 0.76rem;
   color: var(--ch-text-on-paper-muted);
-  white-space: nowrap;
+  max-width: 8.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 9rem;
+  white-space: nowrap;
+}
+
+.event-node-card__organizer-avatar {
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: var(--ch-paper-3);
+  border: 1px solid var(--ch-line-strong);
+  font-family: var(--ch-font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.event-node-card__organizer-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
