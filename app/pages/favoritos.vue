@@ -1,15 +1,23 @@
+<!--
+  Página de favoritos del usuario (ruta /favoritos).
+  Muestra las actividades que el usuario autenticado ha marcado
+  como favoritas y permite quitarlas de la lista.
+-->
 <script setup lang="ts">
 definePageMeta({ middleware: 'auth' });
 useHead({ title: 'Mis favoritos · CommunityHub' });
 
 const eventsStore = useEventsStore();
+// Indica si la lista de favoritos todavía se está cargando
 const cargando = ref(true);
 
+/** Al montar la página, carga los favoritos del usuario autenticado. */
 onMounted(async () => {
   await eventsStore.obtenerMisFavoritos();
   cargando.value = false;
 });
 
+/** Quita una actividad de la lista de favoritos del usuario. */
 async function quitar(eventId: string) {
   await eventsStore.quitarFavorito(eventId);
 }

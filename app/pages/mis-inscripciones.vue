@@ -1,20 +1,31 @@
+<!--
+  Página "Mis inscripciones" (ruta "/mis-inscripciones", requiere autenticación).
+  Lista las actividades a las que el usuario está inscrito y permite
+  cancelar la inscripción.
+-->
 <script setup lang="ts">
 definePageMeta({ middleware: 'auth' });
 useHead({ title: 'Mis inscripciones · CommunityHub' });
 
 const eventsStore = useEventsStore();
-const cargando = ref(true);
+const cargando = ref(true); // Indica si aún se está cargando el listado inicial de inscripciones
 
+// Al montar la página, carga las inscripciones del usuario autenticado.
 onMounted(async () => {
   await eventsStore.obtenerMisInscripciones();
   cargando.value = false;
 });
 
+/**
+ * Cancela la inscripción del usuario a una actividad, previa confirmación.
+ * @param eventId Identificador de la actividad.
+ */
 async function cancelar(eventId: string) {
   if (!confirm('¿Estás seguro de que deseas cancelar tu inscripción a esta actividad?')) return;
   await eventsStore.cancelarInscripcion(eventId);
 }
 
+/** Determina si una fecha (ISO) corresponde a una actividad aún no realizada. */
 function esFutura(fecha: string) {
   return new Date(fecha) >= new Date();
 }

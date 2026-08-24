@@ -1,3 +1,8 @@
+<!--
+  Página "Centro de notificaciones" (ruta "/notificaciones", requiere autenticación).
+  Muestra las notificaciones del usuario (recordatorios, inscripciones,
+  actualizaciones, etc.), permite filtrarlas, marcarlas como leídas y eliminarlas.
+-->
 <script setup lang="ts">
 import type { Notificacion } from '~/stores/notifications';
 
@@ -5,19 +10,22 @@ definePageMeta({ middleware: 'auth' });
 useHead({ title: 'Notificaciones · CommunityHub' });
 
 const notificationsStore = useNotificationsStore();
-const filtroActivo = ref<'todas' | 'sin_leer' | 'reminder' | 'registration'>('todas');
-const refrescando = ref(false);
+const filtroActivo = ref<'todas' | 'sin_leer' | 'reminder' | 'registration'>('todas'); // Filtro de categoría seleccionado
+const refrescando = ref(false); // Indica si se está refrescando manualmente el listado
 
+// Al montar la página, carga las notificaciones del usuario autenticado.
 onMounted(async () => {
   await notificationsStore.obtenerNotificaciones();
 });
 
+/** Vuelve a cargar las notificaciones desde la API. */
 async function refrescar() {
   refrescando.value = true;
   await notificationsStore.obtenerNotificaciones();
   refrescando.value = false;
 }
 
+// Notificaciones visibles según el filtro activo (todas, sin leer, o por tipo).
 const notificacionesFiltradas = computed(() => {
   if (filtroActivo.value === 'sin_leer') {
     return notificationsStore.notificaciones.filter((n) => !n.isRead);
@@ -31,6 +39,7 @@ const notificacionesFiltradas = computed(() => {
   return notificationsStore.notificaciones;
 });
 
+/** Devuelve un código corto identificando el tipo de notificación (usado como icono textual). */
 function obtenerIcono(tipo: string): string {
   switch (tipo) {
     case 'reminder':
@@ -47,6 +56,7 @@ function obtenerIcono(tipo: string): string {
   }
 }
 
+/** Devuelve la etiqueta legible en español para un tipo de notificación. */
 function obtenerEtiquetaTipo(tipo: string): string {
   switch (tipo) {
     case 'reminder':
@@ -63,6 +73,7 @@ function obtenerEtiquetaTipo(tipo: string): string {
   }
 }
 
+/** Formatea una fecha ISO en un texto relativo/legible ("Hoy a las..." o fecha corta). */
 function formatearFecha(fechaIso: string): string {
   if (!fechaIso) return '';
   const fecha = new Date(fechaIso);
@@ -75,15 +86,24 @@ function formatearFecha(fechaIso: string): string {
   return `${fecha.toLocaleDateString('es-CR', { day: 'numeric', month: 'short' })} · ${fecha.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
+/**
+ * Marca una notificación individual como leída (si aún no lo estaba).
+ * @param notif Notificación a marcar.
+ */
 async function marcarLeida(notif: Notificacion) {
   if (notif.isRead) return;
   await notificationsStore.marcarLeida(notif._id);
 }
 
+/** Marca todas las notificaciones del usuario como leídas. */
 async function marcarTodas() {
   await notificationsStore.marcarTodasLeidas();
 }
 
+/**
+ * Elimina una notificación.
+ * @param id Identificador de la notificación a eliminar.
+ */
 async function eliminar(id: string) {
   await notificationsStore.eliminarNotificacion(id);
 }
@@ -93,7 +113,6 @@ async function eliminar(id: string) {
   <div class="panel-page">
     <div class="panel-container">
 
-      <!-- Header Hero -->
       <header class="notif-hero panel-card">
         <div class="notif-hero__info">
           <div>
@@ -128,7 +147,6 @@ async function eliminar(id: string) {
         </div>
       </header>
 
-      <!-- Segmented Control Tabs -->
       <div class="segmented-tabs-wrapper">
         <div class="segmented-tabs">
           <button
@@ -174,12 +192,10 @@ async function eliminar(id: string) {
         </div>
       </div>
 
-      <!-- Estado cargando -->
       <div v-if="notificationsStore.cargando" class="panel-empty">
         Consultando notificaciones en la plataforma…
       </div>
 
-      <!-- Estado vacío estilizado -->
       <div
         v-else-if="notificacionesFiltradas.length === 0"
         class="panel-card empty-state"
@@ -211,7 +227,6 @@ async function eliminar(id: string) {
         </NuxtLink>
       </div>
 
-      <!-- Lista de notificaciones -->
       <div v-else class="notif-list">
         <article
           v-for="notif in notificacionesFiltradas"
@@ -345,7 +360,6 @@ async function eliminar(id: string) {
   flex-wrap: wrap;
 }
 
-/* Segmented Control Tabs */
 .segmented-tabs-wrapper {
   margin-bottom: 1.75rem;
 }
@@ -402,7 +416,6 @@ async function eliminar(id: string) {
   color: #fff;
 }
 
-/* Empty State */
 .empty-state {
   text-align: center;
   padding: 3.5rem 2rem;
@@ -479,7 +492,6 @@ async function eliminar(id: string) {
   line-height: 1.35;
 }
 
-/* Notification List */
 .notif-list {
   display: flex;
   flex-direction: column;

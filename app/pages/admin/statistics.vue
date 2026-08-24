@@ -1,11 +1,19 @@
+<!--
+  Página de estadísticas generales (ruta /admin/statistics).
+  Solo accesible para administradores; muestra métricas clave
+  de toda la plataforma (usuarios, actividades, inscripciones, etc.).
+-->
 <script setup lang="ts">
 definePageMeta({ middleware: 'admin' });
 useHead({ title: 'Estadísticas · Administración' });
 
 const { apiFetch } = useApi();
+// Métricas generales de la plataforma obtenidas del API (o null mientras cargan)
 const metrics = ref<Record<string, number> | null>(null);
+// Indica si las métricas todavía se están cargando
 const cargando = ref(true);
 
+/** Al montar la página, obtiene las métricas generales del dashboard desde el API. */
 onMounted(async () => {
   const res = await apiFetch<{ data: { metrics: Record<string, number> } }>('/dashboard');
   metrics.value = res.data.metrics;

@@ -1,9 +1,15 @@
+<!--
+  Página de administración de usuarios (ruta /admin/users).
+  Solo accesible para administradores; permite listar, eliminar
+  cuentas y cambiar el rol de los usuarios registrados.
+-->
 <script setup lang="ts">
 definePageMeta({ middleware: 'admin' });
 useHead({ title: 'Usuarios · Administración' });
 
 const { apiFetch } = useApi();
 
+// Estructura de un usuario tal como lo expone el endpoint de administración
 interface UsuarioAdmin {
   _id: string;
   firstName: string;
@@ -12,9 +18,12 @@ interface UsuarioAdmin {
   role: 'administrador' | 'organizador' | 'usuario';
 }
 
+// Lista de usuarios registrados en la plataforma
 const usuarios = ref<UsuarioAdmin[]>([]);
+// Indica si la lista de usuarios todavía se está cargando
 const cargando = ref(true);
 
+/** Carga (o recarga) la lista de usuarios desde el API. */
 async function cargar() {
   cargando.value = true;
   const res = await apiFetch<{ data: { users: UsuarioAdmin[] } }>('/users');
@@ -22,14 +31,17 @@ async function cargar() {
   cargando.value = false;
 }
 
+// Al montar la página, carga la lista de usuarios
 onMounted(cargar);
 
+/** Elimina la cuenta de un usuario (previa confirmación) y refresca la lista. */
 async function eliminar(usuario: UsuarioAdmin) {
   if (!confirm(`¿Eliminar la cuenta de ${usuario.firstName} ${usuario.lastName}?`)) return;
   await apiFetch(`/users/${usuario._id}`, { method: 'DELETE' });
   await cargar();
 }
 
+/** Cambia el rol asignado a un usuario y refresca la lista. */
 async function cambiarRol(usuario: UsuarioAdmin, role: string) {
   await apiFetch(`/users/${usuario._id}`, { method: 'PUT', body: { role } });
   await cargar();

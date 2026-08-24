@@ -1,4 +1,6 @@
+<!-- Banner que se muestra cuando el usuario pierde la conexión a internet (modo offline de la PWA) -->
 <script setup lang="ts">
+// Estado reactivo de conexión provisto por el composable useOnlineStatus
 const { isOnline } = useOnlineStatus();
 </script>
 

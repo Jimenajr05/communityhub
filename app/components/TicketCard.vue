@@ -1,7 +1,9 @@
+<!-- Tarjeta decorativa tipo "boleto/ticket" con talón perforado, usada para mostrar entradas de eventos -->
 <script setup lang="ts">
+// Props del ticket: etiqueta y código mostrados en el talón
 interface Props {
-  stubLabel?: string;
-  stubCode?: string;
+  stubLabel?: string; // Texto del talón (por defecto "Entrada")
+  stubCode?: string; // Código/número mostrado en el talón
 }
 
 withDefaults(defineProps<Props>(), {

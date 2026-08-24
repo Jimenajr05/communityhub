@@ -1,3 +1,8 @@
+<!--
+  Página de dashboard del usuario autenticado (ruta /dashboard).
+  Muestra un resumen y métricas personalizadas según el rol del
+  usuario (usuario, organizador o administrador).
+-->
 <script setup lang="ts">
 definePageMeta({ middleware: 'auth' });
 useHead({ title: 'Dashboard · CommunityHub' });
@@ -5,15 +10,20 @@ useHead({ title: 'Dashboard · CommunityHub' });
 const authStore = useAuthStore();
 const { apiFetch } = useApi();
 
+// Forma de la respuesta del endpoint de dashboard
 interface DashboardRespuesta {
   success: boolean;
   data: { role: string; metrics: Record<string, any> };
 }
 
+// Métricas del dashboard según el rol del usuario (o null mientras cargan)
 const metrics = ref<Record<string, any> | null>(null);
+// Indica si las métricas todavía se están cargando
 const cargando = ref(true);
+// Mensaje de error al cargar las métricas
 const error = ref('');
 
+/** Al montar la página, obtiene las métricas del dashboard correspondientes al usuario. */
 onMounted(async () => {
   try {
     const res = await apiFetch<DashboardRespuesta>('/dashboard');
@@ -25,6 +35,7 @@ onMounted(async () => {
   }
 });
 
+// Rol del usuario autenticado, usado para decidir qué métricas y accesos mostrar
 const rol = computed(() => authStore.usuario?.role);
 </script>
 
@@ -32,7 +43,6 @@ const rol = computed(() => authStore.usuario?.role);
   <div class="panel-page">
     <div class="panel-container">
 
-      <!-- Hero Header con perfil y acciones rápidas -->
       <header class="dash-hero panel-card">
         <div class="dash-hero__info">
           <div class="dash-hero__avatar">
@@ -69,12 +79,10 @@ const rol = computed(() => authStore.usuario?.role);
         </div>
       </header>
 
-      <!-- Estado cargando / error -->
       <p v-if="cargando" class="panel-empty">Cargando métricas de tu cuenta…</p>
       <p v-else-if="error" class="panel-empty">{{ error }}</p>
 
       <template v-else-if="metrics">
-        <!-- Dashboard de usuario -->
         <div v-if="rol === 'usuario'" class="metric-grid">
           <NuxtLink to="/mis-inscripciones" class="metric-card">
             <div class="metric-card__body">
@@ -109,7 +117,6 @@ const rol = computed(() => authStore.usuario?.role);
           </NuxtLink>
         </div>
 
-        <!-- Dashboard de organizador -->
         <div v-else-if="rol === 'organizador'" class="metric-grid">
           <NuxtLink to="/mis-actividades" class="metric-card">
             <div class="metric-card__body">
@@ -144,7 +151,6 @@ const rol = computed(() => authStore.usuario?.role);
           </NuxtLink>
         </div>
 
-        <!-- Dashboard de admin -->
         <div v-else-if="rol === 'administrador'" class="metric-grid">
           <NuxtLink to="/admin/users" class="metric-card">
             <div class="metric-card__body">
@@ -195,7 +201,6 @@ const rol = computed(() => authStore.usuario?.role);
           </NuxtLink>
         </div>
 
-        <!-- Próximas actividades de usuario -->
         <div class="panel-card activity-feed" v-if="rol === 'usuario' && metrics.upcomingEvents?.length">
           <div class="activity-feed__header">
             <h3>Tus próximas actividades</h3>
@@ -211,7 +216,6 @@ const rol = computed(() => authStore.usuario?.role);
           </ul>
         </div>
 
-        <!-- Próximas actividades de organizador -->
         <div class="panel-card activity-feed" v-if="rol === 'organizador' && metrics.recentEvents?.length">
           <div class="activity-feed__header">
             <h3>Tus eventos recientes</h3>

@@ -1,18 +1,25 @@
+<!--
+  Página de registro de nueva cuenta (ruta "/registro").
+  Muestra el formulario de registro y, tras crear la cuenta, autentica
+  automáticamente al usuario y lo redirige a la ruta solicitada o al inicio.
+-->
 <script setup lang="ts">
 useHead({ title: 'Crear cuenta · CommunityHub' });
 
-const firstName = ref('');
-const lastName = ref('');
-const email = ref('');
-const password = ref('');
-const showPassword = ref(false);
-const errorMessage = ref('');
+const firstName = ref(''); // Nombre ingresado en el formulario
+const lastName = ref(''); // Apellido ingresado en el formulario
+const email = ref(''); // Correo ingresado en el formulario
+const password = ref(''); // Contraseña ingresada en el formulario
+const showPassword = ref(false); // Controla si la contraseña se muestra en texto plano
+const errorMessage = ref(''); // Mensaje de error a mostrar tras un intento fallido de registro
 
 const authStore = useAuthStore();
 const router = useRouter();
 const route = useRoute();
 
+// Indica si hay una operación de autenticación en curso (deshabilita el formulario).
 const cargando = computed(() => authStore.cargando);
+// Valida que todos los campos requeridos estén completos y con formato correcto.
 const isFormValid = computed(
   () =>
     firstName.value.trim().length > 0 &&
@@ -21,9 +28,11 @@ const isFormValid = computed(
     password.value.length >= 8,
 );
 
+// Textos del panel decorativo de la pantalla de autenticación.
 const headlineLines = ['Sé parte', 'de tu', 'comunidad'];
 const tags = ['Voluntariado', 'Networking', 'Deportes', 'Arte', 'Talleres'];
 
+/** Envía el formulario de registro, crea la cuenta y redirige al usuario. */
 async function onSubmit() {
   errorMessage.value = '';
   if (!isFormValid.value) return;
@@ -35,7 +44,6 @@ async function onSubmit() {
       email: email.value.trim(),
       password: password.value,
     });
-    // Misma lógica que login.vue: solo se acepta una ruta interna.
     const redirectParam = route.query.redirect;
     const destino =
       typeof redirectParam === 'string' && redirectParam.startsWith('/') && !redirectParam.startsWith('//')

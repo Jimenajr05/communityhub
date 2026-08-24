@@ -1,3 +1,8 @@
+<!--
+  Página "Mis actividades" (ruta "/mis-actividades", requiere rol de organizador).
+  Permite al organizador crear, editar, cancelar y eliminar sus actividades,
+  y consultar la lista de participantes inscritos en cada una.
+-->
 <script setup lang="ts">
 definePageMeta({ middleware: 'organizer' });
 useHead({ title: 'Mis actividades · CommunityHub' });
@@ -6,13 +11,13 @@ const authStore = useAuthStore();
 const eventsStore = useEventsStore();
 const { apiFetch } = useApi();
 
-const cargando = ref(true);
-const mostrarFormulario = ref(false);
-const editandoId = ref<string | null>(null);
-const guardando = ref(false);
-const errorFormulario = ref('');
+const cargando = ref(true); // Indica si se está cargando el listado inicial de actividades
+const mostrarFormulario = ref(false); // Controla la visibilidad del formulario de creación/edición
+const editandoId = ref<string | null>(null); // Id de la actividad en edición (null si se está creando una nueva)
+const guardando = ref(false); // Indica si el formulario se está guardando
+const errorFormulario = ref(''); // Mensaje de error al guardar el formulario
 
-// Estado para visualización de participantes
+/** Datos de un participante inscrito en una actividad. */
 interface Participante {
   _id: string;
   user: {
@@ -25,12 +30,13 @@ interface Participante {
   createdAt: string;
 }
 
-const mostrarParticipantes = ref(false);
-const actividadSeleccionada = ref<any>(null);
-const participantes = ref<Participante[]>([]);
-const cargandoParticipantes = ref(false);
-const errorParticipantes = ref('');
+const mostrarParticipantes = ref(false); // Controla la visibilidad del modal de participantes
+const actividadSeleccionada = ref<any>(null); // Actividad cuyo listado de participantes se está viendo
+const participantes = ref<Participante[]>([]); // Participantes cargados de la actividad seleccionada
+const cargandoParticipantes = ref(false); // Indica si se está cargando el listado de participantes
+const errorParticipantes = ref(''); // Mensaje de error al cargar participantes
 
+// Datos del formulario de creación/edición de actividad.
 const form = reactive({
   title: '',
   description: '',
@@ -41,6 +47,7 @@ const form = reactive({
   capacity: 20,
 });
 
+/** Restablece el formulario a sus valores por defecto y sale del modo edición. */
 function resetFormulario() {
   form.title = '';
   form.description = '';
@@ -53,6 +60,7 @@ function resetFormulario() {
   errorFormulario.value = '';
 }
 
+// Al montar la página, carga categorías y las actividades organizadas por el usuario actual.
 onMounted(async () => {
   await eventsStore.cargarCategorias();
   await eventsStore.buscar({ organizer: authStore.usuario?.id });
@@ -60,11 +68,16 @@ onMounted(async () => {
   cargando.value = false;
 });
 
+/** Abre el formulario en modo creación de una nueva actividad. */
 function abrirCreacion() {
   resetFormulario();
   mostrarFormulario.value = true;
 }
 
+/**
+ * Abre el formulario en modo edición, precargando los datos de la actividad.
+ * @param actividad Actividad a editar.
+ */
 function abrirEdicion(actividad: any) {
   editandoId.value = actividad._id;
   form.title = actividad.title;
@@ -77,6 +90,10 @@ function abrirEdicion(actividad: any) {
   mostrarFormulario.value = true;
 }
 
+/**
+ * Carga y muestra el listado de participantes inscritos en una actividad.
+ * @param actividad Actividad de la que se desean ver los participantes.
+ */
 async function verParticipantes(actividad: any) {
   actividadSeleccionada.value = actividad;
   mostrarParticipantes.value = true;
@@ -103,6 +120,7 @@ async function verParticipantes(actividad: any) {
   }
 }
 
+/** Guarda la actividad del formulario: crea una nueva o actualiza la existente en edición. */
 async function guardar() {
   guardando.value = true;
   errorFormulario.value = '';
@@ -123,12 +141,20 @@ async function guardar() {
   }
 }
 
+/**
+ * Cancela una actividad (cambia su estado a "cancelled"), previa confirmación.
+ * @param actividad Actividad a cancelar.
+ */
 async function cancelarActividad(actividad: any) {
   if (!confirm(`¿Cancelar la actividad "${actividad.title}"? Se notificará a los inscritos.`)) return;
   await eventsStore.actualizarActividad(actividad._id, { status: 'cancelled' });
   await eventsStore.buscar({ organizer: authStore.usuario?.id });
 }
 
+/**
+ * Elimina definitivamente una actividad, previa confirmación.
+ * @param actividad Actividad a eliminar.
+ */
 async function eliminarActividad(actividad: any) {
   if (!confirm(`¿Eliminar definitivamente "${actividad.title}"?`)) return;
   await eventsStore.eliminarActividad(actividad._id);
@@ -289,7 +315,6 @@ async function eliminarActividad(actividad: any) {
         </table>
       </div>
 
-      <!-- Modal de Participantes -->
       <div v-if="mostrarParticipantes" class="modal-backdrop" @click="mostrarParticipantes = false">
         <div class="modal-card panel-card" @click.stop>
           <div class="modal-header">

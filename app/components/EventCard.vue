@@ -1,11 +1,15 @@
+<!-- Tarjeta que muestra la información resumida de una actividad/evento en listados -->
 <script setup lang="ts">
 import { useCategoryStyle } from '~/composables/useCategoryStyle';
 import type { Actividad } from '~/stores/events';
 
+// Prop: la actividad a mostrar en la tarjeta
 const props = defineProps<{ actividad: Actividad }>();
 
+// Estilo visual (clase CSS/etiqueta) según la categoría de la actividad
 const categoryStyle = computed(() => useCategoryStyle(props.actividad.category?.name));
 
+// Fecha formateada en día y mes corto (es-CR) para el chip de fecha
 const fechaCorta = computed(() => {
   const fecha = new Date(props.actividad.date);
   return {
@@ -14,12 +18,14 @@ const fechaCorta = computed(() => {
   };
 });
 
+// Porcentaje de ocupación de la actividad (inscritos sobre capacidad), limitado a 100%
 const ocupacion = computed(() => {
   const { capacity, registeredCount } = props.actividad;
   if (capacity <= 0) return 0;
   return Math.min(Math.round((registeredCount / capacity) * 100), 100);
 });
 
+// Indica si ya no quedan cupos disponibles para inscribirse
 const sinCupo = computed(() => props.actividad.spotsAvailable <= 0);
 </script>
 
@@ -84,7 +90,6 @@ const sinCupo = computed(() => props.actividad.spotsAvailable <= 0);
   outline-offset: 2px;
 }
 
-/* ---------- Portada tipo póster, con color por categoría ---------- */
 .event-card__cover {
   position: relative;
   height: 6.5rem;
@@ -170,7 +175,6 @@ const sinCupo = computed(() => props.actividad.spotsAvailable <= 0);
   background: linear-gradient(135deg, var(--ch-marigold) 0%, var(--ch-coral) 100%);
 }
 
-/* ---------- Cuerpo de la tarjeta ---------- */
 .event-card__body {
   padding: 1.1rem 1.35rem 1.3rem;
 }

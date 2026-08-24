@@ -1,3 +1,8 @@
+<!--
+  Página de detalle de actividad (ruta /actividad/[id]).
+  Muestra la información completa de una actividad y permite
+  inscribirse/cancelar inscripción y marcar/quitar de favoritos.
+-->
 <script setup lang="ts">
 import type { Actividad } from '~/stores/events';
 
@@ -5,15 +10,27 @@ const route = useRoute();
 const authStore = useAuthStore();
 const eventsStore = useEventsStore();
 
+// Actividad actualmente mostrada, obtenida por su id de ruta
 const actividad = ref<Actividad | null>(null);
+// Indica si todavía se está cargando la actividad
 const cargando = ref(true);
+// Mensaje de error al cargar la actividad (si aplica)
 const error = ref<string | null>(null);
 
+// Indica si hay una acción (inscripción/favorito) en curso, para deshabilitar botones
 const procesandoAccion = ref(false);
+// Mensaje de resultado (éxito o error) tras inscribirse/cancelar o marcar/quitar favorito
 const mensajeAccion = ref<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
+// Indica si el usuario autenticado está inscrito en la actividad
 const estaInscrito = ref(false);
+// Indica si el usuario autenticado tiene la actividad marcada como favorita
 const esFavorito = ref(false);
 
+/**
+ * Al montar la página, carga la actividad según el id de la ruta.
+ * Si el usuario está autenticado, además verifica su estado de
+ * inscripción y favorito para esa actividad.
+ */
 onMounted(async () => {
   const id = route.params.id as string;
   if (!id) {
@@ -36,6 +53,10 @@ onMounted(async () => {
   cargando.value = false;
 });
 
+/**
+ * Consulta al API si el usuario autenticado está inscrito y/o tiene
+ * como favorita la actividad indicada, actualizando los refs correspondientes.
+ */
 async function verificarEstados(eventId: string) {
   const { apiFetch } = useApi();
   try {
@@ -46,10 +67,13 @@ async function verificarEstados(eventId: string) {
     estaInscrito.value = regRes.data.isRegistered;
     esFavorito.value = favRes.data.isFavorite;
   } catch {
-    // Si falla la consulta de estado, mantenemos en false por defecto
   }
 }
 
+/**
+ * Inscribe o cancela la inscripción del usuario en la actividad actual,
+ * según su estado actual. Redirige a login si no está autenticado.
+ */
 async function alternarInscripcion() {
   if (!authStore.estaAutenticado) {
     navigateTo(`/login?redirect=${encodeURIComponent(route.fullPath)}`);
@@ -83,6 +107,10 @@ async function alternarInscripcion() {
   }
 }
 
+/**
+ * Marca o quita la actividad actual de los favoritos del usuario,
+ * según su estado actual. Redirige a login si no está autenticado.
+ */
 async function alternarFavorito() {
   if (!authStore.estaAutenticado) {
     navigateTo(`/login?redirect=${encodeURIComponent(route.fullPath)}`);
@@ -114,6 +142,7 @@ async function alternarFavorito() {
   }
 }
 
+// Fecha de la actividad formateada en español (ej. "lunes, 3 de marzo de 2026")
 const fechaFormateada = computed(() => {
   if (!actividad.value?.date) return '';
   const fecha = new Date(actividad.value.date);
@@ -125,6 +154,7 @@ const fechaFormateada = computed(() => {
   }).format(fecha);
 });
 
+// Indica si la actividad ya no tiene cupos disponibles
 const sinCupo = computed(() => (actividad.value?.spotsAvailable ?? 0) <= 0);
 </script>
 
