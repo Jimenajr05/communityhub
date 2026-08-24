@@ -71,7 +71,7 @@ async function updateUser(req, res, next) {
  */
 async function deleteUser(req, res, next) {
   try {
-    await userService.deleteUser(req.params.id);
+    await userService.deleteUser(req.params.id, req.user);
     res.json({
       success: true,
       message: 'Usuario eliminado exitosamente',

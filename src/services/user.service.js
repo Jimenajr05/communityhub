@@ -63,6 +63,13 @@ async function updateUser(id, payload, requester) {
     if (!requester || requester.role !== 'administrador') {
       throw ApiError.forbidden('No tiene permisos para cambiar el rol de un usuario');
     }
+    // Si se intenta cambiar el rol de un administrador a otro rol diferente:
+    if (user.role === 'administrador' && payload.role !== 'administrador') {
+      const adminCount = await User.countDocuments({ role: 'administrador' });
+      if (adminCount <= 1) {
+        throw ApiError.badRequest('No se puede cambiar el rol del único administrador del sistema');
+      }
+    }
     user.role = payload.role;
   }
   if (payload.profilePicture !== undefined) user.profilePicture = payload.profilePicture;
@@ -89,13 +96,28 @@ async function updateUser(id, payload, requester) {
 
 /**
  * Elimina un usuario existente por su identificador.
+ * Valida que el usuario logueado no se elimine a sí mismo y que no se elimine el único admin.
  * @param {string} id - Identificador del usuario a eliminar.
+ * @param {Object} [requester] - Usuario autenticado que realiza la solicitud.
  * @returns {Promise<void>}
  */
-async function deleteUser(id) {
+async function deleteUser(id, requester) {
   const user = await User.findById(id);
   if (!user) {
     throw ApiError.notFound('Usuario no encontrado');
+  }
+
+  // Validación 1: No permitir que el usuario se elimine a sí mismo mientras está logueado
+  if (requester && (requester.id?.toString() === id.toString() || requester._id?.toString() === id.toString())) {
+    throw ApiError.badRequest('No puedes eliminar tu propia cuenta de administrador mientras tienes la sesión iniciada');
+  }
+
+  // Validación 2: Si el usuario a eliminar es administrador, verificar que no sea el único en el sistema
+  if (user.role === 'administrador') {
+    const adminCount = await User.countDocuments({ role: 'administrador' });
+    if (adminCount <= 1) {
+      throw ApiError.badRequest('No se puede eliminar el administrador porque es el único administrador del sistema');
+    }
   }
 
   await user.deleteOne();
