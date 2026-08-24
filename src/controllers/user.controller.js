@@ -49,9 +49,32 @@ async function deleteUser(req, res, next) {
   }
 }
 
+async function uploadAvatar(req, res, next) {
+  try {
+    if (!req.file) {
+      throw require('../utils/ApiError').badRequest('No se proporcionó ningún archivo de imagen');
+    }
+
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    const user = await userService.updateUser(req.user.id, { profilePicture: fileUrl }, req.user);
+
+    res.json({
+      success: true,
+      message: 'Foto de perfil actualizada correctamente',
+      data: {
+        user,
+        profilePicture: fileUrl,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getUsers,
   getUser,
   updateUser,
   deleteUser,
+  uploadAvatar,
 };

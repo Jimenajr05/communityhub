@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
 
@@ -47,6 +48,22 @@ async function updateUser(id, payload, requester) {
     user.role = payload.role;
   }
   if (payload.profilePicture !== undefined) user.profilePicture = payload.profilePicture;
+
+  // Cambio de contraseña: requiere la contraseña actual para confirmar identidad
+  if (payload.newPassword) {
+    if (!payload.currentPassword) {
+      throw ApiError.badRequest('Debes proporcionar tu contraseña actual para cambiarla');
+    }
+    if (payload.newPassword.length < 8) {
+      throw ApiError.badRequest('La nueva contraseña debe tener al menos 8 caracteres');
+    }
+    const userWithPassword = await User.findById(id).select('+password');
+    const isMatch = await bcrypt.compare(payload.currentPassword, userWithPassword.password);
+    if (!isMatch) {
+      throw ApiError.unauthorized('La contraseña actual es incorrecta');
+    }
+    user.password = await bcrypt.hash(payload.newPassword, 10);
+  }
 
   await user.save();
   return sanitizeUser(user);

@@ -20,7 +20,8 @@ router.post('/:id/favorite', authenticate, favoriteController.addFavorite);
 router.delete('/:id/favorite', authenticate, favoriteController.removeFavorite);
 router.get('/:id/favorite/status', authenticate, favoriteController.checkStatus);
 
-// Protegidas: solo organizadores y admins pueden crear/editar/eliminar.
+// Protegidas: solo organizadores y admins pueden consultar participantes o crear/editar/eliminar.
+router.get('/:id/participants', authenticate, authorize('organizador', 'administrador'), registrationController.getParticipants);
 router.post('/', authenticate, authorize('organizador', 'administrador'), eventController.create);
 router.put('/:id', authenticate, authorize('organizador', 'administrador'), eventController.update);
 router.delete('/:id', authenticate, authorize('organizador', 'administrador'), eventController.remove);
