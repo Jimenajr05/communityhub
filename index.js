@@ -1,6 +1,12 @@
+/**
+ * Función AWS Lambda de CommunityHub: contiene dos handlers serverless
+ * (recordatorios de actividades próximas y reporte periódico de estadísticas)
+ * que se conectan directamente a MongoDB usando versiones simplificadas de
+ * los modelos del backend, sin depender del código de la API.
+ */
 const mongoose = require('mongoose');
 
-// Schemas simplificados para ejecución serverless sin depender de modelos externos completos
+// Esquema simplificado de Notification: solo los campos que esta Lambda necesita leer/crear
 const notificationSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -16,6 +22,7 @@ const notificationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Esquema simplificado de Registration: relaciona un usuario con un evento y su estado de inscripción
 const registrationSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -25,6 +32,7 @@ const registrationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Esquema simplificado de Event: título, categoría, fecha y estado de la actividad
 const eventSchema = new mongoose.Schema(
   {
     title: { type: String },
@@ -35,6 +43,7 @@ const eventSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Esquema simplificado de User: solo se necesita el rol para contar usuarios/organizadores/administradores
 const userSchema = new mongoose.Schema(
   {
     role: { type: String },
@@ -42,16 +51,24 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Esquema simplificado de Category: solo el nombre, usado para el reporte de categoría más popular
 const categorySchema = new mongoose.Schema({
   name: { type: String },
 });
 
+// Modelos Mongoose reutilizando el registro existente si ya fue compilado (evita OverwriteModelError en invocaciones repetidas)
 const Notification = mongoose.models.Notification || mongoose.model('Notification', notificationSchema);
 const Registration = mongoose.models.Registration || mongoose.model('Registration', registrationSchema);
 const Event = mongoose.models.Event || mongoose.model('Event', eventSchema);
 const User = mongoose.models.User || mongoose.model('User', userSchema);
 const Category = mongoose.models.Category || mongoose.model('Category', categorySchema);
 
+/**
+ * Asegura que exista una conexión activa a MongoDB, reutilizando la conexión
+ * existente entre invocaciones "calientes" de la Lambda en lugar de abrir una nueva cada vez.
+ * @returns {Promise<void>}
+ * @throws {Error} Si falta la variable de entorno MONGODB_URI.
+ */
 async function ensureConnection() {
   const mongoUri = process.env.MONGODB_URI;
   if (!mongoUri) {
@@ -62,33 +79,44 @@ async function ensureConnection() {
   }
 }
 
+/**
+ * Handler principal de la Lambda: busca actividades activas que ocurrirán
+ * dentro de las próximas 24 horas y crea una notificación de tipo "reminder"
+ * para cada usuario inscrito y confirmado que aún no la haya recibido.
+ * Pensada para dispararse periódicamente vía AWS EventBridge.
+ * @param {object} event - Evento de invocación de Lambda (no se usa su contenido).
+ * @param {object} context - Contexto de ejecución de Lambda.
+ * @returns {Promise<{statusCode: number, body: string}>} Respuesta HTTP-like con el resultado del proceso.
+ */
 exports.handler = async (event, context) => {
-  // En entornos Serverless reutilizamos la conexión existente si está activa
+  // Evita que Lambda espere a que el event loop esté vacío antes de responder (conexiones de mongoose quedan abiertas)
   context.callbackWaitsForEmptyEventLoop = false;
 
   try {
     await ensureConnection();
 
     const now = new Date();
+    // Límite superior: dentro de las próximas 24 horas desde ahora
     const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-    // 1. Buscar eventos activos que ocurrirán dentro de las próximas 24h
+    // Actividades activas cuya fecha cae dentro de la ventana de 24 horas
     const upcomingEvents = await Event.find({
       status: 'active',
       date: { $gte: now, $lte: next24Hours },
     });
 
+    // Contador de notificaciones nuevas creadas en esta ejecución
     let notificationsCreated = 0;
 
     for (const upcomingEvent of upcomingEvents) {
-      // 2. Obtener usuarios inscritos
+      // Usuarios con inscripción confirmada en esta actividad
       const registrations = await Registration.find({
         event: upcomingEvent._id,
         status: 'confirmed',
       });
 
       for (const reg of registrations) {
-        // 3. Verificar si ya se envió un recordatorio previo para este evento
+        // Evita duplicar el recordatorio si ya se le notificó a este usuario para esta actividad
         const existingNotif = await Notification.findOne({
           user: reg.user,
           event: upcomingEvent._id,
@@ -129,13 +157,14 @@ exports.handler = async (event, context) => {
 };
 
 /**
- * Segunda función serverless: genera un reporte periódico de estadísticas
- * generales de la plataforma (punto 17 del enunciado) y lo entrega como
- * notificación de tipo "report" a cada administrador, para que lo consulte
- * desde GET /api/notifications sin exponer un endpoint nuevo en el backend.
- *
- * Disparada por una regla de AWS EventBridge independiente (p. ej. una vez
- * al día), separada de la de recordatorios para no acoplar ambas tareas.
+ * Segundo handler de la Lambda: genera un reporte periódico con estadísticas
+ * generales de la plataforma (usuarios, actividades, inscripciones, actividad
+ * más popular y categoría más usada) y lo entrega como notificación de tipo
+ * "report" a cada usuario administrador. Pensado para dispararse una vez al
+ * día vía AWS EventBridge, en una regla separada del handler de recordatorios.
+ * @param {object} event - Evento de invocación de Lambda (no se usa su contenido).
+ * @param {object} context - Contexto de ejecución de Lambda.
+ * @returns {Promise<{statusCode: number, body: string}>} Respuesta HTTP-like con el resultado del proceso.
  */
 exports.reportHandler = async (event, context) => {
   context.callbackWaitsForEmptyEventLoop = false;
@@ -143,6 +172,7 @@ exports.reportHandler = async (event, context) => {
   try {
     await ensureConnection();
 
+    // Estadísticas generales calculadas en paralelo para minimizar el tiempo de ejecución
     const [
       totalUsers,
       totalOrganizers,
@@ -161,7 +191,7 @@ exports.reportHandler = async (event, context) => {
       User.find({ role: 'administrador' }, '_id'),
     ]);
 
-    // Actividad más popular: la que tiene más inscripciones confirmadas
+    // Actividad con más inscripciones confirmadas (agrupando registros por evento)
     const popularAgg = await Registration.aggregate([
       { $match: { status: 'confirmed' } },
       { $group: { _id: '$event', total: { $sum: 1 } } },
@@ -174,7 +204,7 @@ exports.reportHandler = async (event, context) => {
       mostPopularEvent = ev ? { title: ev.title, registrations: popularAgg[0].total } : null;
     }
 
-    // Categoría más utilizada: la que tiene más actividades creadas
+    // Categoría con más actividades creadas (agrupando eventos por categoría)
     const categoryAgg = await Event.aggregate([
       { $group: { _id: '$category', total: { $sum: 1 } } },
       { $sort: { total: -1 } },
@@ -186,6 +216,7 @@ exports.reportHandler = async (event, context) => {
       topCategory = cat ? { name: cat.name, events: categoryAgg[0].total } : null;
     }
 
+    // Objeto con todas las estadísticas calculadas, incluido en la respuesta de la Lambda
     const stats = {
       totalUsers,
       totalOrganizers,
@@ -198,6 +229,7 @@ exports.reportHandler = async (event, context) => {
       generatedAt: new Date().toISOString(),
     };
 
+    // Texto legible del reporte que se guarda como mensaje de la notificación
     const summary =
       `📊 Reporte CommunityHub — ${totalUsers} usuarios (${totalOrganizers} organizadores), ` +
       `${totalEvents} actividades (${activeEvents} activas, ${finishedEvents} finalizadas), ` +
