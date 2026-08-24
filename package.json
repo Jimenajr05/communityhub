@@ -1,0 +1,14 @@
+{
+  "name": "communityhub-lambda",
+  "version": "1.0.0",
+  "description": "CommunityHub Serverless Notifications Function",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-eventbridge": "^3.1114.0",
+    "@aws-sdk/client-lambda": "^3.1114.0",
+    "mongoose": "^8.24.3"
+  },
+  "devDependencies": {
+    "adm-zip": "^0.6.0"
+  }
+}
