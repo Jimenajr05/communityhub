@@ -14,7 +14,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['reminder', 'update', 'cancellation', 'system'],
+      enum: ['reminder', 'update', 'cancellation', 'cancellation_user', 'registration', 'system'],
       default: 'system',
     },
     message: {
@@ -26,7 +26,33 @@ const notificationSchema = new mongoose.Schema(
       default: false,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: {
+      virtuals: true,
+      transform: (doc, ret) => {
+        ret.id = ret._id;
+        ret.isRead = ret.read;
+        return ret;
+      },
+    },
+    toObject: {
+      virtuals: true,
+      transform: (doc, ret) => {
+        ret.id = ret._id;
+        ret.isRead = ret.read;
+        return ret;
+      },
+    },
+  }
 );
+
+notificationSchema.virtual('isRead').get(function () {
+  return this.read;
+});
+
+notificationSchema.virtual('id').get(function () {
+  return this._id ? this._id.toHexString() : undefined;
+});
 
 module.exports = mongoose.model('Notification', notificationSchema);
