@@ -1,0 +1,649 @@
+/* =====================================================================
+   COMMUNITYHUB DESIGN SYSTEM: "PUNTOS DE ENCUENTRO"
+   Identidad visual basada en redes comunitarias, nodos, coordenadas y conexiones.
+   ===================================================================== */
+
+:root {
+  /* Jerarquía de fondos oscuros con matiz azul-noche */
+  --ch-ink: #04060c;
+  --ch-ink-2: #090d1a;
+  --ch-ink-soft: #0f1528;
+
+  --ch-paper: #0f1528;
+  --ch-paper-2: #161e38;
+  --ch-paper-3: #1d274a;
+  --ch-paper-hover: #242f56;
+
+  /* Identidad principal: Violeta Eléctrico & Ámbar Punto de Encuentro */
+  --ch-coral: #7c5cfc;
+  --ch-coral-light: #9d84fd;
+  --ch-coral-dark: #6342e8;
+  --ch-coral-glow: rgba(124, 92, 252, 0.35);
+
+  --ch-marigold: #f59e0b;
+  --ch-marigold-light: #fbbf24;
+  --ch-marigold-glow: rgba(245, 158, 11, 0.28);
+
+  /* Acentos de categorías */
+  --ch-teal: #06b6d4;
+  --ch-teal-dark: #0891b2;
+  --ch-rose: #f43f5e;
+  --ch-rose-dark: #e11d48;
+  --ch-violet: #8b5cf6;
+  --ch-violet-dark: #7c3aed;
+  --ch-leaf: #10b981;
+  --ch-leaf-dark: #059669;
+  --ch-indigo: #6366f1;
+
+  /* Jerarquía tipográfica */
+  --ch-text-on-ink: #f8fafc;
+  --ch-text-on-ink-muted: #94a3b8;
+  --ch-text-on-ink-dim: #64748b;
+  --ch-text-on-paper: #f8fafc;
+  --ch-text-on-paper-muted: #94a3b8;
+  --ch-text-on-paper-dim: #64748b;
+
+  /* Bordes e iluminación perimetral */
+  --ch-line: rgba(255, 255, 255, 0.08);
+  --ch-line-strong: rgba(255, 255, 255, 0.16);
+  --ch-line-focus: rgba(124, 92, 252, 0.5);
+  --ch-node: rgba(124, 92, 252, 0.6);
+  --ch-error: #f43f5e;
+
+  /* Geometría y bordes */
+  --ch-radius-lg: 20px;
+  --ch-radius-md: 14px;
+  --ch-radius-sm: 8px;
+  --ch-radius-full: 9999px;
+
+  /* Sombras y profundidad */
+  --ch-shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.5);
+  --ch-shadow-md: 0 12px 28px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --ch-shadow-lg: 0 24px 48px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --ch-shadow-glow: 0 0 24px -4px var(--ch-coral-glow);
+
+  /* Familias tipográficas */
+  --ch-font-display: "Outfit", "Plus Jakarta Sans", -apple-system, sans-serif;
+  --ch-font-body: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --ch-font-mono: "IBM Plex Mono", "Courier New", monospace;
+}
+
+/* Reseteo y base */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--ch-font-body);
+  background-color: var(--ch-ink);
+  color: var(--ch-text-on-ink);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Tipografía de encabezados */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--ch-font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ch-text-on-ink);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Reducción de movimiento para accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* =====================================================================
+   LENGUAJE VISUAL: NODOS, BALIZAS, MAPAS Y CONSTELACIONES
+   ===================================================================== */
+.ch-constellation {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+    radial-gradient(rgba(124, 92, 252, 0.22) 1.5px, transparent 1.5px);
+  background-size: 32px 32px, 64px 64px;
+  background-position: 0 0, 16px 16px;
+}
+
+.ch-beacon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  height: 10px;
+}
+
+.ch-beacon-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ch-marigold);
+  box-shadow: 0 0 10px var(--ch-marigold-glow);
+}
+
+.ch-beacon-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--ch-marigold);
+  opacity: 0.6;
+  animation: pulse-ring 2.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.6); opacity: 0.8; }
+  80% { transform: scale(2); opacity: 0; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* Categorías temáticas */
+.cover--talleres { --cat-color: var(--ch-coral); color: var(--ch-coral); }
+.cover--deportes { --cat-color: var(--ch-teal); color: var(--ch-teal); }
+.cover--arte { --cat-color: var(--ch-rose); color: var(--ch-rose); }
+.cover--networking { --cat-color: var(--ch-violet); color: var(--ch-violet); }
+.cover--voluntariado { --cat-color: var(--ch-leaf); color: var(--ch-leaf); }
+.cover--default { --cat-color: var(--ch-marigold); color: var(--ch-marigold); }
+
+/* =====================================================================
+   SISTEMA DE BOTONES CONTEXTUALES Y MICROINTERACCIONES
+   ===================================================================== */
+.pill-btn,
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--ch-font-body);
+  font-weight: 600;
+  font-size: 0.88rem;
+  letter-spacing: -0.01em;
+  border-radius: var(--ch-radius-full);
+  padding: 0.62rem 1.35rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  line-height: 1.25;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Primario: Violeta eléctrico con halo de brillo */
+.pill-btn--primary {
+  background: linear-gradient(135deg, #7c5cfc 0%, #6342e8 100%) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 4px 16px var(--ch-coral-glow);
+}
+
+.pill-btn--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #8b6efd 0%, #7050f7 100%) !important;
+  transform: translateY(-1.5px);
+  box-shadow: 0 8px 24px rgba(124, 92, 252, 0.45);
+}
+
+/* Secundario: Obsidiana pulida con relieve */
+.pill-btn--secondary {
+  background: var(--ch-paper-2) !important;
+  color: var(--ch-text-on-ink) !important;
+  border: 1px solid var(--ch-line-strong) !important;
+  box-shadow: var(--ch-shadow-sm);
+}
+
+.pill-btn--secondary:hover:not(:disabled) {
+  background: var(--ch-paper-3) !important;
+  border-color: var(--ch-coral-light) !important;
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Ghost: Contorno sutil y elegante */
+.pill-btn--ghost {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid var(--ch-line-strong) !important;
+  color: var(--ch-text-on-ink) !important;
+}
+
+.pill-btn--ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  transform: translateY(-1.5px);
+}
+
+/* Danger: Destello carmesí */
+.pill-btn--danger {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 4px 16px rgba(244, 63, 94, 0.3);
+}
+
+.pill-btn--danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #fb7185 0%, #f43f5e 100%) !important;
+  transform: translateY(-1.5px);
+  box-shadow: 0 8px 22px rgba(244, 63, 94, 0.45);
+}
+
+.pill-btn:active:not(:disabled),
+.btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.pill-btn:disabled,
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* =====================================================================
+   CAMPOS DE FORMULARIO DE ALTA PRECISIÓN
+   ===================================================================== */
+.field {
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.field label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ch-text-on-paper);
+}
+
+.field input,
+.field select,
+.field textarea,
+select {
+  font-family: var(--ch-font-body);
+  font-size: 0.94rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--ch-radius-sm);
+  border: 1px solid var(--ch-line-strong);
+  background-color: rgba(15, 21, 40, 0.75);
+  color: var(--ch-text-on-paper);
+  transition: all 0.18s ease;
+  width: 100%;
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--ch-text-on-paper-dim);
+}
+
+.field input:focus-visible,
+.field select:focus-visible,
+.field textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: var(--ch-coral-light);
+  box-shadow: 0 0 0 3px var(--ch-coral-glow);
+  background-color: var(--ch-paper-2);
+}
+
+.field input:disabled,
+.field select:disabled,
+.field textarea:disabled,
+select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.field-hint {
+  font-size: 0.76rem;
+  color: var(--ch-text-on-paper-muted);
+}
+
+.field select,
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  background-size: 1.1rem;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+.form-error {
+  margin: 0 0 1.1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--ch-radius-sm);
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  color: #fb7185;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.password-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input input {
+  padding-right: 3.2rem;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--ch-text-on-paper-muted);
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: 6px;
+  transition: color 0.15s ease;
+}
+
+.password-toggle:hover {
+  color: var(--ch-coral-light);
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 0.85rem 1.25rem;
+  border: none;
+  border-radius: var(--ch-radius-full);
+  background: linear-gradient(135deg, #7c5cfc 0%, #6342e8 100%);
+  color: #ffffff;
+  font-family: var(--ch-font-body);
+  font-weight: 700;
+  font-size: 0.96rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 16px var(--ch-coral-glow);
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #8b6efd 0%, #7050f7 100%);
+  transform: translateY(-1.5px);
+  box-shadow: 0 8px 24px rgba(124, 92, 252, 0.45);
+}
+
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =====================================================================
+   PÁGINAS DE PANELES Y GESTIÓN
+   ===================================================================== */
+.panel-page {
+  min-height: calc(100vh - 4.5rem);
+  background: radial-gradient(circle at 80% 10%, var(--ch-ink-soft) 0%, var(--ch-ink-2) 60%, var(--ch-ink) 100%);
+  padding: 2.75rem 1.5rem 4.5rem;
+}
+
+.panel-container {
+  max-width: 68rem;
+  margin: 0 auto;
+}
+
+.panel-header {
+  margin-bottom: 2rem;
+}
+
+.panel-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--ch-font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--ch-marigold);
+  margin-bottom: 0.45rem;
+}
+
+.panel-header h1 {
+  font-family: var(--ch-font-display);
+  font-weight: 700;
+  font-size: clamp(1.8rem, 3.5vw, 2.4rem);
+  margin: 0 0 0.4rem;
+  color: var(--ch-text-on-ink);
+}
+
+.panel-header p {
+  margin: 0;
+  color: var(--ch-text-on-ink-muted);
+  font-size: 0.98rem;
+}
+
+.panel-card {
+  background: var(--ch-paper);
+  border: 1px solid var(--ch-line);
+  border-radius: var(--ch-radius-md);
+  padding: 1.75rem;
+  box-shadow: var(--ch-shadow-md);
+  position: relative;
+}
+
+.panel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  gap: 1.25rem;
+}
+
+/* Tablas de datos elegantes */
+.data-table-wrap {
+  overflow-x: auto;
+  border-radius: var(--ch-radius-md);
+  border: 1px solid var(--ch-line);
+  background: var(--ch-paper);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 0.95rem 1rem;
+  border-bottom: 1px solid var(--ch-line);
+  vertical-align: middle;
+}
+
+.data-table th {
+  font-family: var(--ch-font-mono);
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ch-text-on-paper-muted);
+  background: var(--ch-paper-2);
+}
+
+.data-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.data-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.025);
+}
+
+/* Barra de navegación de administración */
+.panel-nav {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.panel-nav a {
+  font-family: var(--ch-font-mono);
+  font-size: 0.8rem;
+  color: var(--ch-text-on-ink-muted);
+  text-decoration: none;
+  padding: 0.45rem 1rem;
+  border-radius: var(--ch-radius-full);
+  border: 1px solid var(--ch-line-strong);
+  background: rgba(15, 21, 40, 0.7);
+  transition: all 0.18s ease;
+}
+
+.panel-nav a:hover {
+  color: var(--ch-text-on-ink);
+  border-color: var(--ch-coral);
+  background: rgba(124, 92, 252, 0.1);
+}
+
+.panel-nav a.router-link-exact-active,
+.panel-nav a.router-link-active {
+  background: var(--ch-coral);
+  color: #ffffff;
+  border-color: var(--ch-coral);
+  box-shadow: 0 2px 10px var(--ch-coral-glow);
+}
+
+/* Estado de carga y mensajes vacíos */
+.panel-empty {
+  text-align: center;
+  padding: 3.5rem 1rem;
+  color: var(--ch-text-on-paper-muted);
+}
+
+/* =====================================================================
+   ESTÉTICA AUTH SCREEN: PASE DE ACCESO COMUNITARIO
+   ===================================================================== */
+.auth-screen {
+  min-height: calc(100vh - 4.5rem);
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  background: var(--ch-ink);
+}
+
+.auth-screen__side {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  background: radial-gradient(circle at 50% 50%, var(--ch-ink-soft) 0%, var(--ch-ink-2) 100%);
+  border-left: 1px solid var(--ch-line);
+}
+
+.ticket {
+  width: 100%;
+  max-width: 26rem;
+  background: var(--ch-paper);
+  border-radius: var(--ch-radius-lg);
+  border: 1px solid var(--ch-line-strong);
+  box-shadow: var(--ch-shadow-lg);
+  overflow: hidden;
+}
+
+.ticket__stub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.75rem;
+  background: var(--ch-paper-2);
+  border-bottom: 1px dashed var(--ch-line-strong);
+}
+
+.ticket__stub-label {
+  font-family: var(--ch-font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ch-marigold);
+  font-weight: 600;
+}
+
+.ticket__stub-code {
+  font-family: var(--ch-font-mono);
+  font-size: 0.72rem;
+  color: var(--ch-text-on-paper-muted);
+}
+
+.ticket__form {
+  padding: 2.25rem 1.75rem 2rem;
+}
+
+.ticket__form h2 {
+  font-size: 1.6rem;
+  margin: 0 0 0.4rem;
+  color: var(--ch-text-on-paper);
+}
+
+.ticket__subtitle {
+  margin: 0 0 1.75rem;
+  color: var(--ch-text-on-paper-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.ticket__footer {
+  margin: 1.4rem 0 0;
+  text-align: center;
+  font-size: 0.86rem;
+  color: var(--ch-text-on-paper-muted);
+}
+
+.ticket__footer a {
+  color: var(--ch-coral-light);
+  font-weight: 600;
+  margin-left: 0.25rem;
+}
+
+.ticket__footer a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 900px) {
+  .auth-screen {
+    grid-template-columns: 1fr;
+  }
+  .auth-screen__side {
+    border-left: none;
+    border-top: 1px solid var(--ch-line);
+    padding: 2.5rem 1.25rem 3.5rem;
+  }
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+}
