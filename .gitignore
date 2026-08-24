@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Backend
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Frontend (Nuxt)
+frontend/.nuxt/
+frontend/.output/
+frontend/.data/
+frontend/dist/
+
+# Lambda
+lambda/*.zip
+lambda/build/
+lambda/dist/
+
+# Logs
+*.log
+logs/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.sw?
+
+# Temp
+tmp/
+temp/
