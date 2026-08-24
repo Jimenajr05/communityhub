@@ -1,9 +1,11 @@
+/**
+ * Store de autenticación (Pinia).
+ * Gestiona el usuario autenticado, el token de sesión y las acciones
+ * relacionadas con login, registro, obtención de perfil y logout.
+ */
 import { defineStore } from 'pinia';
 
-// Estos campos reflejan exactamente lo que devuelve el backend
-// (services/auth.service.js -> sanitizeUser y models/User.js).
-// Ojo: el modelo usa firstName/lastName (en inglés) pero los roles están
-// en español ('administrador' | 'organizador' | 'usuario').
+/** Representa a un usuario de la plataforma. */
 export interface Usuario {
   id: string;
   firstName: string;
@@ -13,27 +15,28 @@ export interface Usuario {
   profilePicture: string | null;
 }
 
+/** Respuesta de la API para login/registro: usuario y token generado. */
 interface AuthPayload {
   data: { user: Usuario; token: string };
 }
 
+/** Respuesta de la API al consultar el usuario autenticado actual. */
 interface MePayload {
   data: { user: Usuario };
 }
 
+/** Forma del estado del store de autenticación. */
 interface AuthState {
-  usuario: Usuario | null;
-  token: string | null;
-  cargando: boolean;
+  usuario: Usuario | null; // Usuario actualmente autenticado (null si no hay sesión)
+  token: string | null; // Token de sesión vigente
+  cargando: boolean; // Indica si hay una operación de autenticación en curso
 }
 
-// Cookie donde persistimos el JWT para que la sesión sobreviva a un refresh
-// de página. httpOnly no aplica aquí porque el token lo maneja el cliente
-// (Nuxt SSR) para adjuntarlo como Bearer en cada request.
+/** Cookie que persiste el token de autenticación entre recargas/sesiones del navegador. */
 const useTokenCookie = () =>
   useCookie<string | null>('ch_token', {
     sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7, // 7 días
+    maxAge: 60 * 60 * 24 * 7,
   });
 
 export const useAuthStore = defineStore('auth', {
@@ -44,10 +47,17 @@ export const useAuthStore = defineStore('auth', {
   }),
 
   getters: {
+    /** Indica si actualmente hay un usuario autenticado. */
     estaAutenticado: (state) => Boolean(state.usuario),
   },
 
   actions: {
+    /**
+     * Inicia sesión con email y contraseña.
+     * Guarda el usuario y token resultantes en el estado y en la cookie de sesión.
+     * @param email Correo electrónico del usuario.
+     * @param password Contraseña del usuario.
+     */
     async login(email: string, password: string) {
       const { apiFetch } = useApi();
       this.cargando = true;
@@ -64,6 +74,11 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    /**
+     * Registra un nuevo usuario y lo autentica automáticamente.
+     * Guarda el usuario y token resultantes en el estado y en la cookie de sesión.
+     * @param payload Datos del nuevo usuario (nombre, apellido, email y contraseña).
+     */
     async registrar(payload: {
       firstName: string;
       lastName: string;
@@ -85,6 +100,10 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    /**
+     * Obtiene los datos del usuario autenticado a partir del token guardado
+     * (en estado o en cookie). Si no hay token o la petición falla, limpia la sesión.
+     */
     async obtenerUsuarioActual() {
       const cookieToken = useTokenCookie();
       if (!this.token && cookieToken.value) {
@@ -106,6 +125,10 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    /**
+     * Actualiza los datos de perfil del usuario autenticado.
+     * @param payload Campos a actualizar (nombre, apellido y/o foto de perfil).
+     */
     async actualizarPerfil(payload: { firstName?: string; lastName?: string; profilePicture?: string }) {
       if (!this.usuario) return;
       const { apiFetch } = useApi();
@@ -116,6 +139,7 @@ export const useAuthStore = defineStore('auth', {
       this.usuario = respuesta.data.user;
     },
 
+    /** Cierra la sesión del usuario: limpia el estado y la cookie de token. */
     async logout() {
       const { apiFetch } = useApi();
       try {

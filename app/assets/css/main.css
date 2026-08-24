@@ -1,30 +1,15 @@
-/**
- * Design tokens de CommunityHub.
- *
- * Concepto: la plataforma gira en torno a actividades y eventos, así que el
- * lenguaje visual toma prestado del mundo de las entradas/tickets de evento
- * (perforaciones, sellos, papel) combinado con el tono nocturno de un
- * cartel de cartelera comunitaria. Usa estas variables en cualquier
- * página nueva para mantener consistencia entre lo que hace Fernanda y
- * lo que hace Jimena.
- */
-
 :root {
-  /* Superficie moderna (Dark Slate / Deep Obsidian) */
   --ch-ink: #080c14;
   --ch-ink-2: #0d121f;
   --ch-ink-soft: #151d30;
 
-  /* Superficie de tarjetas y paneles (Elevated Slate Surface) */
   --ch-paper: #121a2c;
   --ch-paper-2: #19243b;
 
-  /* Acentos vibrantes modernos */
   --ch-coral: #6366f1;
   --ch-coral-dark: #4f46e5;
   --ch-marigold: #f59e0b;
 
-  /* Acentos por categoría */
   --ch-teal: #06b6d4;
   --ch-teal-dark: #0891b2;
   --ch-rose: #f43f5e;
@@ -34,20 +19,17 @@
   --ch-leaf: #10b981;
   --ch-leaf-dark: #059669;
 
-  /* Texto de alto contraste y legibilidad */
   --ch-text-on-ink: #f8fafc;
   --ch-text-on-ink-muted: #94a3b8;
   --ch-text-on-paper: #f8fafc;
   --ch-text-on-paper-muted: #94a3b8;
 
-  /* Utilidad y bordes translúcidos modernos */
   --ch-line: rgba(255, 255, 255, 0.08);
   --ch-error: #ef4444;
   --ch-radius-lg: 20px;
   --ch-radius-md: 14px;
   --ch-radius-sm: 8px;
 
-  /* Tipografía limpia y moderna */
   --ch-font-display: "Outfit", "Plus Jakarta Sans", sans-serif;
   --ch-font-body: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --ch-font-mono: "IBM Plex Mono", "Courier New", monospace;
@@ -72,11 +54,6 @@ body {
   }
 }
 
-/**
- * Componente "ticket" reutilizable (tarjeta con forma de entrada de evento).
- * Compartido por cualquier pantalla que use <TicketCard> (login, registro).
- * Vive aquí, sin scope, para que no se duplique por cada página.
- */
 .auth-screen {
   min-height: 100vh;
   display: grid;
@@ -367,11 +344,6 @@ select:disabled {
   }
 }
 
-/**
- * Layout compartido para páginas "de panel" (dashboard, perfil, favoritos,
- * mis actividades/inscripciones, admin). Reutiliza los mismos tokens que el
- * resto de la app para que todo se vea como un solo sistema.
- */
 .panel-page {
   min-height: 100vh;
   background: var(--ch-ink-2);

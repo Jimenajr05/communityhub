@@ -1,3 +1,4 @@
+<!-- Barra de navegación lateral del panel de administración -->
 <script setup lang="ts"></script>
 
 <template>

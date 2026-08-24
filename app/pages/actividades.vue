@@ -1,15 +1,22 @@
+<!--
+  Página de listado de actividades (ruta /actividades).
+  Permite buscar y filtrar actividades por texto, categoría,
+  disponibilidad de cupo y fecha.
+-->
 <script setup lang="ts">
 useHead({ title: 'Actividades · CommunityHub' });
 
 const eventsStore = useEventsStore();
+// Texto de búsqueda ingresado por el usuario
 const searchTerm = ref('');
+// Id de la categoría seleccionada como filtro (null = sin filtro)
 const categoriaSeleccionada = ref<string | null>(null);
+// Filtro: mostrar solo actividades con cupo disponible
 const soloConCupo = ref(false);
+// Filtro: fecha seleccionada para las actividades
 const fechaSeleccionada = ref('');
 
-// Todos los filtros se envían al backend (GET /api/events?search=&category=&
-// available=&date=) para que el filtrado sea real y no dependa de lo que ya
-// haya llegado al cliente.
+/** Ejecuta la búsqueda de actividades en el store aplicando los filtros actuales. */
 function buscarConFiltros() {
   eventsStore.buscar({
     search: searchTerm.value.trim() || undefined,
@@ -19,35 +26,43 @@ function buscarConFiltros() {
   });
 }
 
+/** Al montar la página, carga las categorías disponibles y realiza la búsqueda inicial. */
 onMounted(() => {
   eventsStore.cargarCategorias();
   buscarConFiltros();
 });
 
+// Referencia al temporizador usado para aplicar debounce a la búsqueda por texto
 let debounceHandle: ReturnType<typeof setTimeout> | null = null;
+// Aplica debounce: espera a que el usuario deje de escribir antes de buscar
 watch(searchTerm, () => {
   if (debounceHandle) clearTimeout(debounceHandle);
   debounceHandle = setTimeout(buscarConFiltros, 350);
 });
 
+/** Reintenta la búsqueda tras un error. */
 function reintentar() {
   buscarConFiltros();
 }
 
+/** Selecciona o deselecciona (toggle) una categoría como filtro y vuelve a buscar. */
 function toggleCategoria(id: string) {
   categoriaSeleccionada.value = categoriaSeleccionada.value === id ? null : id;
   buscarConFiltros();
 }
 
+/** Activa o desactiva el filtro de "solo con cupo disponible" y vuelve a buscar. */
 function toggleCupo() {
   soloConCupo.value = !soloConCupo.value;
   buscarConFiltros();
 }
 
+/** Se ejecuta cuando el usuario cambia la fecha del filtro. */
 function onFechaChange() {
   buscarConFiltros();
 }
 
+/** Limpia el filtro de fecha y vuelve a buscar. */
 function limpiarFecha() {
   fechaSeleccionada.value = '';
   buscarConFiltros();
@@ -114,7 +129,6 @@ function limpiarFecha() {
     </header>
 
     <main class="activities-body">
-      <!-- Cargando: skeletons en vez de texto plano -->
       <div v-if="eventsStore.cargando" class="activities-grid" aria-hidden="true">
         <div v-for="n in 6" :key="n" class="skeleton-card">
           <div class="skeleton-card__cover" />
@@ -123,7 +137,6 @@ function limpiarFecha() {
         </div>
       </div>
 
-      <!-- Error (p. ej. backend caído o sin base de datos conectada) -->
       <div v-else-if="eventsStore.error" class="state-message state-message--error" role="alert">
         <p>{{ eventsStore.error }}</p>
         <button type="button" class="submit-btn state-message__retry" @click="reintentar">
@@ -131,13 +144,11 @@ function limpiarFecha() {
         </button>
       </div>
 
-      <!-- Sin resultados -->
       <div v-else-if="eventsStore.actividades.length === 0" class="state-message">
         <span class="state-message__emoji" aria-hidden="true"></span>
         <p>No encontramos actividades{{ searchTerm ? ` para “${searchTerm}”` : '' }}.</p>
       </div>
 
-      <!-- Resultados -->
       <div v-else class="activities-grid">
         <EventCard v-for="actividad in eventsStore.actividades" :key="actividad._id" :actividad="actividad" />
       </div>
@@ -352,7 +363,6 @@ function limpiarFecha() {
   padding: 0.6rem 1.5rem;
 }
 
-/* ---------- Skeletons de carga ---------- */
 .skeleton-card {
   background: var(--ch-paper);
   border-radius: var(--ch-radius-md);

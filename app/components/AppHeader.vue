@@ -1,21 +1,19 @@
+<!-- Encabezado global de la aplicación: logo, navegación principal y menú responsive -->
 <script setup lang="ts">
-/**
- * Barra de navegación global: aparece en toda la app (se monta una sola vez
- * desde app.vue) para que siempre haya cómo volver al inicio, ir a
- * actividades o acceder a tu cuenta, sin depender de que cada página arme
- * su propio link de "volver".
- */
 const authStore = useAuthStore();
 const notificationsStore = useNotificationsStore();
 const router = useRouter();
+// Controla si el menú de navegación móvil está abierto o cerrado
 const menuAbierto = ref(false);
 
+// Al montar, si el usuario ya está autenticado, se cargan sus notificaciones
 onMounted(() => {
   if (authStore.estaAutenticado) {
     notificationsStore.obtenerNotificaciones();
   }
 });
 
+// Cuando el usuario inicia sesión (cambia el estado de autenticación), se recargan las notificaciones
 watch(
   () => authStore.estaAutenticado,
   (autenticado) => {
@@ -25,6 +23,10 @@ watch(
   }
 );
 
+/**
+ * Cierra la sesión del usuario: cierra el menú móvil, ejecuta el logout
+ * en el store de autenticación y redirige a la página de inicio.
+ */
 async function cerrarSesion() {
   menuAbierto.value = false;
   await authStore.logout();

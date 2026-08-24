@@ -1,10 +1,12 @@
+<!-- Panel visual decorativo tipo "póster" usado en las páginas de autenticación (login/registro) -->
 <script setup lang="ts">
+// Props del panel: textos y etiquetas que se muestran sobre el fondo decorativo
 interface Props {
-  eyebrow?: string;
-  headlineLines: string[];
-  copy: string;
-  tags: string[];
-  sealLines?: [string, string];
+  eyebrow?: string; // Texto pequeño superior (por defecto "CommunityHub")
+  headlineLines: string[]; // Líneas del titular principal
+  copy: string; // Texto descriptivo debajo del titular
+  tags: string[]; // Lista de etiquetas/chips a mostrar
+  sealLines?: [string, string]; // Dos líneas de texto para el "sello" decorativo
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -12,8 +14,7 @@ const props = withDefaults(defineProps<Props>(), {
   sealLines: () => ['MIEMBRO', '2026'],
 });
 
-// Rotaciones fijas para que las etiquetas se vean "pegadas" a mano,
-// sin depender de Math.random (evitaría mismatches de hidratación SSR).
+// Ángulos de rotación usados para dar un efecto visual "manuscrito" a las etiquetas
 const rotations = [-4, 3, -2, 5, -6, 4, -3];
 </script>
 

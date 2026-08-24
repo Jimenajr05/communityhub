@@ -1,3 +1,8 @@
+<!--
+  Página de administración de categorías (ruta /admin/categories).
+  Solo accesible para administradores; permite crear y eliminar
+  las categorías disponibles para las actividades.
+-->
 <script setup lang="ts">
 definePageMeta({ middleware: 'admin' });
 useHead({ title: 'Categorías · Administración' });
@@ -5,15 +10,21 @@ useHead({ title: 'Categorías · Administración' });
 const eventsStore = useEventsStore();
 const { apiFetch } = useApi();
 
+// Nombre de la nueva categoría a crear
 const nombre = ref('');
+// Descripción opcional de la nueva categoría
 const descripcion = ref('');
+// Indica si se está guardando (creando) la categoría
 const guardando = ref(false);
+// Mensaje de error al crear la categoría
 const error = ref('');
 
+/** Al montar la página, carga la lista de categorías existentes. */
 onMounted(() => {
   eventsStore.cargarCategorias();
 });
 
+/** Crea una nueva categoría con el nombre y descripción ingresados y refresca la lista. */
 async function crear() {
   if (!nombre.value.trim()) return;
   guardando.value = true;
@@ -31,6 +42,7 @@ async function crear() {
   }
 }
 
+/** Elimina una categoría (previa confirmación) y refresca la lista. */
 async function eliminar(id: string) {
   if (!confirm('¿Eliminar esta categoría?')) return;
   await apiFetch(`/categories/${id}`, { method: 'DELETE' });

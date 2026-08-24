@@ -1,3 +1,8 @@
+<!--
+  Página principal del panel de administración (ruta /admin).
+  Solo accesible para administradores; sirve de menú de acceso
+  a las secciones de usuarios, actividades, categorías y estadísticas.
+-->
 <script setup lang="ts">
 definePageMeta({ middleware: 'admin' });
 useHead({ title: 'Administración · CommunityHub' });

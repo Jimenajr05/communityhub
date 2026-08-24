@@ -1,11 +1,15 @@
+<!--
+  Página de inicio (ruta "/").
+  Muestra una pantalla de bienvenida distinta según si el usuario está
+  autenticado o no, con accesos rápidos a actividades, login o logout.
+-->
 <script setup lang="ts">
-// TODO(Fernanda): reemplazar por la página "Inicio" real (con listado de
-// actividades destacadas) cuando el bloque de eventos esté listo. Por ahora
-// es una pantalla de bienvenida ya diseñada, no un placeholder "en crudo".
 useHead({ title: 'CommunityHub' });
 
+// Store de autenticación: se usa para saber si hay sesión activa y los datos del usuario.
 const authStore = useAuthStore();
 
+/** Cierra la sesión del usuario actual. */
 async function onLogout() {
   await authStore.logout();
 }

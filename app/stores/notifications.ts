@@ -1,11 +1,18 @@
+/**
+ * Store de notificaciones (Pinia).
+ * Gestiona la carga, marcado como leídas y eliminación de las notificaciones
+ * del usuario autenticado.
+ */
 import { defineStore } from 'pinia';
 
+/** Resumen del evento/actividad asociado a una notificación, si aplica. */
 export interface NotificacionEvento {
   _id: string;
   title: string;
   date?: string;
 }
 
+/** Representa una notificación del usuario. */
 export interface Notificacion {
   _id: string;
   user: string;
@@ -17,10 +24,11 @@ export interface Notificacion {
   createdAt: string;
 }
 
+/** Forma del estado del store de notificaciones. */
 interface NotificationsState {
-  notificaciones: Notificacion[];
-  cargando: boolean;
-  error: string | null;
+  notificaciones: Notificacion[]; // Listado de notificaciones del usuario
+  cargando: boolean; // Indica si hay una operación en curso
+  error: string | null; // Mensaje de error de la última operación fallida
 }
 
 export const useNotificationsStore = defineStore('notifications', {
@@ -31,18 +39,23 @@ export const useNotificationsStore = defineStore('notifications', {
   }),
 
   getters: {
+    /** Cantidad de notificaciones no leídas. */
     sinLeerCount: (state) => state.notificaciones.filter((n) => !n.isRead).length,
+    /** Lista de notificaciones no leídas. */
     noLeidas: (state) => state.notificaciones.filter((n) => !n.isRead),
   },
 
   actions: {
+    /**
+     * Obtiene las notificaciones del usuario autenticado desde la API
+     * (intenta el endpoint principal y usa uno alternativo como respaldo).
+     */
     async obtenerNotificaciones() {
       const { apiFetch } = useApi();
       this.cargando = true;
       this.error = null;
 
       try {
-        // Intenta obtener de /notifications (o fallback /users/me/notifications)
         let res: any;
         try {
           res = await apiFetch<any>('/notifications');
@@ -61,6 +74,11 @@ export const useNotificationsStore = defineStore('notifications', {
       }
     },
 
+    /**
+     * Marca una notificación como leída, tanto en la API (probando varios
+     * endpoints/métodos posibles) como en el estado local.
+     * @param id Identificador de la notificación.
+     */
     async marcarLeida(id: string) {
       const { apiFetch } = useApi();
       try {
@@ -70,12 +88,9 @@ export const useNotificationsStore = defineStore('notifications', {
           await apiFetch(`/notifications/${id}/read`, { method: 'PUT' });
         }
       } catch {
-        // En caso de que el backend use PUT /notifications/:id
         try {
           await apiFetch(`/notifications/${id}`, { method: 'PUT', body: { isRead: true } });
-        } catch {
-          // Ignorar error si el endpoint difiere ligeramente
-        }
+        } catch {}
       }
 
       const item = this.notificaciones.find((n) => n._id === id);
@@ -84,6 +99,7 @@ export const useNotificationsStore = defineStore('notifications', {
       }
     },
 
+    /** Marca todas las notificaciones del usuario como leídas, en la API y en el estado local. */
     async marcarTodasLeidas() {
       const { apiFetch } = useApi();
       try {
@@ -92,22 +108,22 @@ export const useNotificationsStore = defineStore('notifications', {
         } catch {
           await apiFetch('/notifications/read-all', { method: 'PATCH' });
         }
-      } catch {
-        // Fallback: marcar localmente y llamar a cada una si fuera necesario
-      }
+      } catch {}
 
       this.notificaciones.forEach((n) => {
         n.isRead = true;
       });
     },
 
+    /**
+     * Elimina una notificación de la API y del estado local.
+     * @param id Identificador de la notificación a eliminar.
+     */
     async eliminarNotificacion(id: string) {
       const { apiFetch } = useApi();
       try {
         await apiFetch(`/notifications/${id}`, { method: 'DELETE' });
-      } catch {
-        // Ignorar si el endpoint difiere
-      }
+      } catch {}
 
       this.notificaciones = this.notificaciones.filter((n) => n._id !== id);
     },

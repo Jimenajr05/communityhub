@@ -1,3 +1,8 @@
+<!--
+  Página de administración de actividades (ruta /admin/events).
+  Solo accesible para administradores; permite moderar (listar y
+  eliminar) cualquier actividad de la plataforma.
+-->
 <script setup lang="ts">
 import type { Actividad } from '~/stores/events';
 
@@ -6,12 +11,12 @@ useHead({ title: 'Actividades · Administración' });
 
 const eventsStore = useEventsStore();
 const { apiFetch } = useApi();
+// Indica si las actividades todavía se están cargando
 const cargando = ref(true);
+// Lista combinada de actividades (activas, canceladas y finalizadas)
 const actividades = ref<Actividad[]>([]);
 
-// El listado admin debe ver todas las actividades sin importar su estado;
-// el backend solo omite el filtro de "active" por defecto cuando se pasa
-// `status` explícito, así que se consultan los tres estados y se combinan.
+/** Carga todas las actividades (activas, canceladas y finalizadas) desde el API. */
 async function cargar() {
   cargando.value = true;
   const respuestas = await Promise.all(
@@ -23,8 +28,10 @@ async function cargar() {
   cargando.value = false;
 }
 
+// Al montar la página, carga la lista de actividades
 onMounted(cargar);
 
+/** Elimina definitivamente una actividad (previa confirmación) y refresca la lista. */
 async function eliminar(actividad: Actividad) {
   if (!confirm(`¿Eliminar definitivamente "${actividad.title}"?`)) return;
   await eventsStore.eliminarActividad(actividad._id);

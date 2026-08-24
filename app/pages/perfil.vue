@@ -1,27 +1,35 @@
+<!--
+  Página "Mi perfil" (ruta "/perfil", requiere autenticación).
+  Permite al usuario ver y editar sus datos personales (nombre, apellido)
+  y su foto de perfil (subida como archivo o mediante URL directa).
+-->
 <script setup lang="ts">
 definePageMeta({ middleware: 'auth' });
 useHead({ title: 'Mi perfil · CommunityHub' });
 
 const authStore = useAuthStore();
 
-const firstName = ref(authStore.usuario?.firstName ?? '');
-const lastName = ref(authStore.usuario?.lastName ?? '');
-const profilePicture = ref(authStore.usuario?.profilePicture ?? '');
-const guardando = ref(false);
-const mensaje = ref<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
+const firstName = ref(authStore.usuario?.firstName ?? ''); // Nombre editable del usuario
+const lastName = ref(authStore.usuario?.lastName ?? ''); // Apellido editable del usuario
+const profilePicture = ref(authStore.usuario?.profilePicture ?? ''); // Foto de perfil (data URL o URL externa)
+const guardando = ref(false); // Indica si el formulario se está guardando
+const mensaje = ref<{ tipo: 'exito' | 'error'; texto: string } | null>(null); // Mensaje de resultado tras guardar
 
-const fileInputRef = ref<HTMLInputElement | null>(null);
+const fileInputRef = ref<HTMLInputElement | null>(null); // Referencia al input de archivo oculto
 
+// Traducción legible de los roles de usuario para mostrar en el formulario.
 const rolLegible: Record<string, string> = {
   administrador: 'Administrador',
   organizador: 'Organizador',
   usuario: 'Usuario',
 };
 
+/** Abre el selector de archivos para elegir una nueva foto de perfil. */
 function triggerFileInput() {
   fileInputRef.value?.click();
 }
 
+/** Procesa el archivo de imagen seleccionado y lo convierte a data URL para previsualizarlo/guardarlo. */
 function handleFileChange(event: Event) {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
@@ -42,6 +50,7 @@ function handleFileChange(event: Event) {
   reader.readAsDataURL(file);
 }
 
+/** Quita la foto de perfil seleccionada y limpia el input de archivo. */
 function quitarFoto() {
   profilePicture.value = '';
   if (fileInputRef.value) {
@@ -49,6 +58,7 @@ function quitarFoto() {
   }
 }
 
+/** Guarda los cambios de perfil (nombre, apellido y foto) mediante el store de autenticación. */
 async function guardar() {
   guardando.value = true;
   mensaje.value = null;
@@ -84,7 +94,6 @@ async function guardar() {
       <div class="panel-card" style="max-width: 36rem">
         <form novalidate @submit.prevent="guardar">
 
-          <!-- Sección de Foto de Perfil -->
           <div class="profile-photo-section">
             <div class="profile-avatar-wrap">
               <img
@@ -120,7 +129,6 @@ async function guardar() {
                 </button>
               </div>
 
-              <!-- Input invisible para seleccionar archivo -->
               <input
                 ref="fileInputRef"
                 type="file"
@@ -131,7 +139,6 @@ async function guardar() {
             </div>
           </div>
 
-          <!-- O introducir URL directamente -->
           <div class="field" style="margin-top: 1.25rem;">
             <label for="picUrl">O enlace directo a imagen (URL)</label>
             <input

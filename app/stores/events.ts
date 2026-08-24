@@ -1,11 +1,18 @@
+/**
+ * Store de actividades/eventos (Pinia).
+ * Gestiona la búsqueda y listado de actividades, categorías, inscripciones
+ * y favoritos del usuario, así como la creación/edición/eliminación de actividades.
+ */
 import { defineStore } from 'pinia';
 
+/** Resumen de una categoría de actividad. */
 export interface CategoriaResumen {
   _id: string;
   name: string;
   description?: string;
 }
 
+/** Resumen del organizador de una actividad. */
 export interface OrganizadorResumen {
   _id: string;
   firstName: string;
@@ -13,6 +20,7 @@ export interface OrganizadorResumen {
   email?: string;
 }
 
+/** Representa una actividad/evento de la comunidad. */
 export interface Actividad {
   _id: string;
   title: string;
@@ -29,6 +37,7 @@ export interface Actividad {
   spotsAvailable: number;
 }
 
+/** Representa la inscripción de un usuario a una actividad. */
 export interface Inscripcion {
   _id: string;
   event: Actividad;
@@ -36,12 +45,14 @@ export interface Inscripcion {
   createdAt: string;
 }
 
+/** Representa una actividad marcada como favorita por el usuario. */
 export interface Favorito {
   _id: string;
   event: Actividad;
   createdAt: string;
 }
 
+/** Información de paginación devuelta por la API. */
 interface Paginacion {
   total: number;
   page: number;
@@ -49,11 +60,13 @@ interface Paginacion {
   totalPages: number;
 }
 
+/** Respuesta de la API para listados paginados de actividades. */
 interface ListaRespuesta {
   data: Actividad[];
   pagination: Paginacion;
 }
 
+/** Filtros disponibles para la búsqueda de actividades. */
 export interface FiltrosActividades {
   search?: string;
   category?: string;
@@ -65,14 +78,15 @@ export interface FiltrosActividades {
   page?: number;
 }
 
+/** Forma del estado del store de actividades/eventos. */
 interface EventsState {
-  actividades: Actividad[];
-  categorias: CategoriaResumen[];
-  misInscripciones: Inscripcion[];
-  misFavoritos: Favorito[];
-  paginacion: Paginacion | null;
-  cargando: boolean;
-  error: string | null;
+  actividades: Actividad[]; // Listado de actividades obtenidas de la última búsqueda
+  categorias: CategoriaResumen[]; // Categorías disponibles
+  misInscripciones: Inscripcion[]; // Inscripciones del usuario autenticado
+  misFavoritos: Favorito[]; // Actividades favoritas del usuario autenticado
+  paginacion: Paginacion | null; // Información de paginación de la última búsqueda
+  cargando: boolean; // Indica si hay una operación en curso
+  error: string | null; // Mensaje de error de la última operación fallida
 }
 
 export const useEventsStore = defineStore('events', {
@@ -87,6 +101,11 @@ export const useEventsStore = defineStore('events', {
   }),
 
   actions: {
+    /**
+     * Busca actividades aplicando los filtros indicados y actualiza el listado
+     * y la paginación en el estado.
+     * @param filtros Criterios de búsqueda (texto, categoría, ubicación, fecha, etc.).
+     */
     async buscar(filtros: FiltrosActividades = {}) {
       const { apiFetch } = useApi();
       this.cargando = true;
@@ -119,6 +138,11 @@ export const useEventsStore = defineStore('events', {
       }
     },
 
+    /**
+     * Obtiene el detalle de una actividad por su id.
+     * @param id Identificador de la actividad.
+     * @returns La actividad encontrada o null si no existe/hay error.
+     */
     async obtenerPorId(id: string): Promise<Actividad | null> {
       const { apiFetch } = useApi();
       try {
@@ -131,6 +155,7 @@ export const useEventsStore = defineStore('events', {
       }
     },
 
+    /** Carga la lista de categorías disponibles desde la API. */
     async cargarCategorias() {
       const { apiFetch } = useApi();
       try {
@@ -144,18 +169,27 @@ export const useEventsStore = defineStore('events', {
       }
     },
 
+    /**
+     * Inscribe al usuario autenticado en una actividad y refresca sus inscripciones.
+     * @param eventId Identificador de la actividad.
+     */
     async inscribirse(eventId: string) {
       const { apiFetch } = useApi();
       await apiFetch(`/events/${eventId}/register`, { method: 'POST' });
       await this.obtenerMisInscripciones();
     },
 
+    /**
+     * Cancela la inscripción del usuario autenticado a una actividad y refresca sus inscripciones.
+     * @param eventId Identificador de la actividad.
+     */
     async cancelarInscripcion(eventId: string) {
       const { apiFetch } = useApi();
       await apiFetch(`/events/${eventId}/register`, { method: 'DELETE' });
       await this.obtenerMisInscripciones();
     },
 
+    /** Obtiene las inscripciones del usuario autenticado y las guarda en el estado. */
     async obtenerMisInscripciones() {
       const { apiFetch } = useApi();
       try {
@@ -169,18 +203,27 @@ export const useEventsStore = defineStore('events', {
       }
     },
 
+    /**
+     * Marca una actividad como favorita para el usuario autenticado y refresca sus favoritos.
+     * @param eventId Identificador de la actividad.
+     */
     async marcarFavorito(eventId: string) {
       const { apiFetch } = useApi();
       await apiFetch(`/events/${eventId}/favorite`, { method: 'POST' });
       await this.obtenerMisFavoritos();
     },
 
+    /**
+     * Quita una actividad de los favoritos del usuario autenticado y refresca sus favoritos.
+     * @param eventId Identificador de la actividad.
+     */
     async quitarFavorito(eventId: string) {
       const { apiFetch } = useApi();
       await apiFetch(`/events/${eventId}/favorite`, { method: 'DELETE' });
       await this.obtenerMisFavoritos();
     },
 
+    /** Obtiene las actividades favoritas del usuario autenticado y las guarda en el estado. */
     async obtenerMisFavoritos() {
       const { apiFetch } = useApi();
       try {
@@ -194,16 +237,29 @@ export const useEventsStore = defineStore('events', {
       }
     },
 
+    /**
+     * Crea una nueva actividad.
+     * @param payload Datos de la actividad a crear.
+     */
     async crearActividad(payload: Record<string, unknown>) {
       const { apiFetch } = useApi();
       await apiFetch('/events', { method: 'POST', body: payload });
     },
 
+    /**
+     * Actualiza una actividad existente.
+     * @param id Identificador de la actividad.
+     * @param payload Campos a actualizar.
+     */
     async actualizarActividad(id: string, payload: Record<string, unknown>) {
       const { apiFetch } = useApi();
       await apiFetch(`/events/${id}`, { method: 'PUT', body: payload });
     },
 
+    /**
+     * Elimina una actividad.
+     * @param id Identificador de la actividad a eliminar.
+     */
     async eliminarActividad(id: string) {
       const { apiFetch } = useApi();
       await apiFetch(`/events/${id}`, { method: 'DELETE' });
