@@ -73,6 +73,12 @@ async function getOrganizerDashboard(organizerId) {
  * @returns {Promise<Object>} Resumen del dashboard administrativo.
  */
 async function getAdminDashboard() {
+  const now = new Date();
+  await Event.updateMany(
+    { status: 'active', date: { $lt: now } },
+    { status: 'finished' }
+  ).catch(() => {});
+
   const [
     totalUsers,
     totalOrganizers,

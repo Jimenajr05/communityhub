@@ -17,6 +17,7 @@ const MAX_LIMIT = 50;
  * @returns {Promise<Array<Object>>} Lista de actividades enriquecidas con "registeredCount" y "spotsAvailable".
  */
 async function attachAvailability(events) {
+    const now = new Date();
     return Promise.all(
         events.map(async (event) => {
             const registeredCount = await Registration.countDocuments({
@@ -24,8 +25,17 @@ async function attachAvailability(events) {
                 status: 'confirmed',
             });
             const plain = event.toObject ? event.toObject() : event;
+
+            // Si la fecha de la actividad ya transcurrió y su estado seguía 'active', se actualiza a 'finished'
+            let status = plain.status;
+            if (status === 'active' && plain.date && new Date(plain.date) < now) {
+                status = 'finished';
+                Event.findByIdAndUpdate(plain._id, { status: 'finished' }).catch(() => {});
+            }
+
             return {
                 ...plain,
+                status,
                 registeredCount,
                 spotsAvailable: Math.max(plain.capacity - registeredCount, 0),
             };
@@ -110,12 +120,21 @@ async function listEvents(query) {
     }
 
     if (date) {
-        const start = new Date(date);
-        if (!Number.isNaN(start.getTime())) {
-            // Rango de un día completo [start, end) para filtrar por fecha exacta.
-            const end = new Date(start);
-            end.setDate(end.getDate() + 1);
-            filter.date = { $gte: start, $lt: end };
+        const dateStr = String(date).split('T')[0];
+        const parts = dateStr.split('-').map(Number);
+        if (parts.length === 3 && !parts.some(Number.isNaN)) {
+            const [year, month, day] = parts;
+            // Abarca el día calendario completo tolerando desfases de zona horaria (UTC-12 a UTC+14)
+            const startRange = new Date(Date.UTC(year, month - 1, day - 1, 12, 0, 0));
+            const endRange = new Date(Date.UTC(year, month - 1, day + 1, 12, 0, 0));
+            filter.date = { $gte: startRange, $lt: endRange };
+        } else {
+            const start = new Date(date);
+            if (!Number.isNaN(start.getTime())) {
+                const end = new Date(start);
+                end.setDate(end.getDate() + 1);
+                filter.date = { $gte: start, $lt: end };
+            }
         }
     }
 
