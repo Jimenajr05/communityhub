@@ -44,9 +44,18 @@ async function crear() {
   }
 }
 
+const { confirmar } = useConfirm();
+
 /** Elimina una categoría (previa confirmación) y refresca la lista. */
 async function eliminar(id: string) {
-  if (!confirm('¿Eliminar esta categoría? Las actividades asociadas perderán su categoría.')) return;
+  const aceptado = await confirmar({
+    title: '¿Eliminar categoría?',
+    message: '¿Estás seguro de eliminar esta categoría? Las actividades vinculadas a ella perderán su clasificación.',
+    confirmText: 'Sí, eliminar categoría',
+    cancelText: 'Cancelar',
+    type: 'danger',
+  });
+  if (!aceptado) return;
   await apiFetch(`/categories/${id}`, { method: 'DELETE' });
   await eventsStore.cargarCategorias();
 }

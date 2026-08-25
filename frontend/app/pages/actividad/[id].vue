@@ -203,7 +203,15 @@ const organizadorIniciales = computed(() => {
             <h1 class="dossier-title">{{ actividad.title }}</h1>
 
             <div class="dossier-organizer">
-              <div class="dossier-organizer__avatar">{{ organizadorIniciales }}</div>
+              <div class="dossier-organizer__avatar">
+                <img
+                  v-if="actividad.organizer?.profilePicture"
+                  :src="actividad.organizer.profilePicture"
+                  :alt="organizadorNombre"
+                  class="dossier-organizer__avatar-img"
+                />
+                <span v-else>{{ organizadorIniciales }}</span>
+              </div>
               <div class="dossier-organizer__info">
                 <span class="dossier-organizer__label">Organizado por</span>
                 <strong class="dossier-organizer__name">{{ organizadorNombre }}</strong>
@@ -511,6 +519,14 @@ const organizadorIniciales = computed(() => {
   font-size: 0.8rem;
   font-weight: 700;
   color: #04060c;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.dossier-organizer__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .dossier-organizer__info {

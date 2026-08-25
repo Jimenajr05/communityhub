@@ -18,7 +18,7 @@ async function getUserDashboard(userId) {
         path: 'event',
         populate: [
           { path: 'category', select: 'name' },
-          { path: 'organizer', select: 'firstName lastName' },
+          { path: 'organizer', select: 'firstName lastName profilePicture' },
         ],
       })
       .sort({ createdAt: -1 }),

@@ -13,6 +13,7 @@ onMounted(() => {
     <OfflineBanner />
     <AppHeader />
     <NuxtPage />
+    <ConfirmModal />
   </div>
 </template>
 

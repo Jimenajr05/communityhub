@@ -123,7 +123,7 @@ async function getUserRegistrations(userId, statusFilter) {
       path: 'event',
       populate: [
         { path: 'category', select: 'name' },
-        { path: 'organizer', select: 'firstName lastName email' },
+        { path: 'organizer', select: 'firstName lastName email profilePicture' },
       ],
     });
 
@@ -190,6 +190,7 @@ async function getEventParticipants(eventId, requester) {
       registrationId: r._id,
       user: r.user,
       registeredAt: r.createdAt,
+      createdAt: r.createdAt,
     })),
   };
 }

@@ -83,7 +83,15 @@ async function eliminar(usuario: UsuarioAdmin) {
     return;
   }
 
-  if (!confirm(`¿Eliminar definitivamente la cuenta de ${usuario.firstName} ${usuario.lastName}?`)) return;
+  const { confirmar } = useConfirm();
+  const aceptado = await confirmar({
+    title: '¿Eliminar usuario?',
+    message: `¿Estás seguro de eliminar definitivamente la cuenta de ${usuario.firstName} ${usuario.lastName} (${usuario.email})? Esta acción borrará permanentemente sus accesos.`,
+    confirmText: 'Sí, eliminar usuario',
+    cancelText: 'Cancelar',
+    type: 'danger',
+  });
+  if (!aceptado) return;
 
   try {
     await apiFetch(`/users/${usuario._id}`, { method: 'DELETE' });
