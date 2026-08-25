@@ -1,4 +1,4 @@
-<!-- Encabezado global de la aplicación: marca interactiva, navegación por rol y menú responsive -->
+<!-- Encabezado global de la aplicación: marca interactiva, navegación centrada por rol y menú responsive -->
 <script setup lang="ts">
 import { Menu, X, Bell, Heart, Ticket, LayoutGrid, ShieldCheck, User, LogOut, Compass } from 'lucide-vue-next';
 
@@ -32,7 +32,7 @@ async function cerrarSesion() {
 <template>
   <header class="app-header">
     <div class="app-header__inner">
-      <!-- Marca principal con isotipo de nodos conectados -->
+      <!-- 1. Marca principal (Izquierda) -->
       <NuxtLink to="/" class="app-header__brand" @click="menuAbierto = false">
         <span class="app-header__brand-orbit" aria-hidden="true">
           <span class="app-header__brand-node app-header__brand-node--main" />
@@ -42,19 +42,7 @@ async function cerrarSesion() {
         <span class="app-header__brand-text">Community<strong>Hub</strong></span>
       </NuxtLink>
 
-      <!-- Botón hamburguesa para móvil y tablet -->
-      <button
-        type="button"
-        class="app-header__toggle"
-        :aria-expanded="menuAbierto"
-        aria-label="Abrir menú de navegación"
-        @click="menuAbierto = !menuAbierto"
-      >
-        <X v-if="menuAbierto" :size="20" :stroke-width="2" />
-        <Menu v-else :size="20" :stroke-width="2" />
-      </button>
-
-      <!-- Navegación de escritorio y móvil -->
+      <!-- 2. Navegación principal (Centrada en Desktop) -->
       <nav class="app-header__nav" :class="{ 'app-header__nav--open': menuAbierto }">
         <NuxtLink to="/actividades" class="app-header__link" @click="menuAbierto = false">
           <Compass :size="15" :stroke-width="2" />
@@ -105,7 +93,42 @@ async function cerrarSesion() {
             <ShieldCheck :size="15" :stroke-width="2" />
             <span>Admin</span>
           </NuxtLink>
+        </template>
 
+        <!-- Bloque de usuario para drawer en móvil -->
+        <div v-if="authStore.estaAutenticado" class="app-header__mobile-user-group">
+          <NuxtLink to="/perfil" class="app-header__profile" @click="menuAbierto = false">
+            <span class="app-header__avatar">
+              <img
+                v-if="authStore.usuario?.profilePicture"
+                :src="authStore.usuario.profilePicture"
+                alt="Foto"
+                class="app-header__avatar-img"
+              />
+              <User v-else :size="13" :stroke-width="2.2" />
+            </span>
+            <span class="app-header__username">{{ authStore.usuario?.firstName }}</span>
+          </NuxtLink>
+
+          <button type="button" class="app-header__logout" title="Cerrar sesión" @click="cerrarSesion">
+            <LogOut :size="14" :stroke-width="2" />
+            <span class="app-header__logout-text">Salir</span>
+          </button>
+        </div>
+
+        <div v-else class="app-header__mobile-auth">
+          <NuxtLink to="/login" class="app-header__link app-header__link--login" @click="menuAbierto = false">
+            Iniciar sesión
+          </NuxtLink>
+          <NuxtLink to="/registro" class="pill-btn pill-btn--primary app-header__cta" @click="menuAbierto = false">
+            Crear cuenta
+          </NuxtLink>
+        </div>
+      </nav>
+
+      <!-- 3. Acciones de usuario / Auth (Derecha en Desktop) + Botón hamburguesa -->
+      <div class="app-header__actions">
+        <template v-if="authStore.estaAutenticado">
           <div class="app-header__user-group">
             <NuxtLink to="/perfil" class="app-header__profile" @click="menuAbierto = false">
               <span class="app-header__avatar">
@@ -128,14 +151,28 @@ async function cerrarSesion() {
         </template>
 
         <template v-else>
-          <NuxtLink to="/login" class="app-header__link app-header__link--login" @click="menuAbierto = false">
-            Iniciar sesión
-          </NuxtLink>
-          <NuxtLink to="/registro" class="pill-btn pill-btn--primary app-header__cta" @click="menuAbierto = false">
-            Crear cuenta
-          </NuxtLink>
+          <div class="app-header__desktop-auth">
+            <NuxtLink to="/login" class="app-header__link app-header__link--login">
+              Iniciar sesión
+            </NuxtLink>
+            <NuxtLink to="/registro" class="pill-btn pill-btn--primary app-header__cta">
+              Crear cuenta
+            </NuxtLink>
+          </div>
         </template>
-      </nav>
+
+        <!-- Botón hamburguesa para móvil y tablet -->
+        <button
+          type="button"
+          class="app-header__toggle"
+          :aria-expanded="menuAbierto"
+          aria-label="Abrir menú de navegación"
+          @click="menuAbierto = !menuAbierto"
+        >
+          <X v-if="menuAbierto" :size="20" :stroke-width="2" />
+          <Menu v-else :size="20" :stroke-width="2" />
+        </button>
+      </div>
     </div>
   </header>
 </template>
@@ -156,14 +193,15 @@ async function cerrarSesion() {
   max-width: 86rem;
   margin: 0 auto;
   padding: 0.65rem 1.25rem;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
-/* Marca con isotipo de dos nodos conectados */
+/* Marca con isotipo de dos nodos conectados (Izquierda) */
 .app-header__brand {
+  justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: 0.65rem;
@@ -232,19 +270,9 @@ async function cerrarSesion() {
   color: var(--ch-coral-light);
 }
 
-.app-header__toggle {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--ch-line-strong);
-  border-radius: var(--ch-radius-sm);
-  color: var(--ch-text-on-ink);
-  padding: 0.45rem;
-  cursor: pointer;
-}
-
+/* Navegación central (Centro en Desktop) */
 .app-header__nav {
+  justify-self: center;
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -323,13 +351,24 @@ async function cerrarSesion() {
   animation: pulse-ring 2s infinite;
 }
 
+/* Acciones y Grupo de usuario (Derecha en Desktop) */
+.app-header__actions {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-header__desktop-auth {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .app-header__user-group {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  margin-left: 0.35rem;
-  padding-left: 0.55rem;
-  border-left: 1px solid var(--ch-line-strong);
   flex-shrink: 0;
 }
 
@@ -374,7 +413,7 @@ async function cerrarSesion() {
 }
 
 .app-header__username {
-  max-width: 5.5rem;
+  max-width: 6.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -407,12 +446,40 @@ async function cerrarSesion() {
   font-size: 0.82rem;
 }
 
+.app-header__mobile-user-group,
+.app-header__mobile-auth {
+  display: none;
+}
+
+.app-header__toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--ch-line-strong);
+  border-radius: var(--ch-radius-sm);
+  color: var(--ch-text-on-ink);
+  padding: 0.45rem;
+  cursor: pointer;
+}
+
 /* =====================================================================
-   RESPONSIVE BREAKPOINTS (PREVIENE QUE SE CORTE EN RESOLUCIONES MEDIAS)
+   RESPONSIVE BREAKPOINTS
    ===================================================================== */
 @media (max-width: 1100px) {
+  .app-header__inner {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+  }
+
   .app-header__toggle {
     display: inline-flex;
+  }
+
+  .app-header__actions .app-header__user-group,
+  .app-header__actions .app-header__desktop-auth {
+    display: none;
   }
 
   .app-header__nav {
@@ -428,6 +495,7 @@ async function cerrarSesion() {
     border-bottom: 1px solid var(--ch-line-strong);
     padding: 1.25rem 1.5rem 1.75rem;
     box-shadow: var(--ch-shadow-lg);
+    justify-self: stretch;
   }
 
   .app-header__nav--open {
@@ -441,14 +509,23 @@ async function cerrarSesion() {
     border-radius: var(--ch-radius-sm);
   }
 
-  .app-header__user-group {
-    border-left: none;
+  .app-header__mobile-user-group {
+    display: flex;
     border-top: 1px solid var(--ch-line);
-    padding-left: 0;
-    margin-left: 0;
     padding-top: 1rem;
     margin-top: 0.5rem;
     justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .app-header__mobile-auth {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    border-top: 1px solid var(--ch-line);
+    padding-top: 1rem;
+    margin-top: 0.5rem;
   }
 
   .app-header__profile {
@@ -462,10 +539,6 @@ async function cerrarSesion() {
 
   .app-header__logout {
     padding: 0.5rem 1rem;
-  }
-
-  .app-header__inner {
-    position: relative;
   }
 }
 </style>
