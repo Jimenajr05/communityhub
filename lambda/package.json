@@ -4,6 +4,7 @@
   "description": "CommunityHub Serverless Notifications & Statistics Report Functions",
   "main": "index.js",
   "scripts": {
+    "test": "node test_local.js",
     "pack": "node pack_and_upload.js",
     "deploy": "node deploy.js",
     "deploy:report": "node deploy_report.js",

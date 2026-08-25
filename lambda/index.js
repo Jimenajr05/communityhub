@@ -128,7 +128,7 @@ exports.handler = async (event, context) => {
             user: reg.user,
             event: upcomingEvent._id,
             type: 'reminder',
-            message: `⏰ Recordatorio: La actividad "${upcomingEvent.title}" se llevará a cabo en menos de 24 horas.`,
+            message: `Recordatorio: La actividad "${upcomingEvent.title}" se llevará a cabo en menos de 24 horas.`,
           });
           notificationsCreated++;
         }
@@ -138,10 +138,10 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 200,
       body: JSON.stringify({
-        success: true,
-        message: 'Procesamiento serverless de recordatorios completado',
-        upcomingEventsProcessed: upcomingEvents.length,
-        notificationsCreated,
+        exito: true,
+        mensaje: 'Procesamiento serverless de recordatorios completado con éxito',
+        actividadesProcesadas: upcomingEvents.length,
+        notificacionesCreadas: notificationsCreated,
       }),
     };
   } catch (error) {
@@ -149,7 +149,7 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 500,
       body: JSON.stringify({
-        success: false,
+        exito: false,
         error: error.message,
       }),
     };
@@ -171,6 +171,12 @@ exports.reportHandler = async (event, context) => {
 
   try {
     await ensureConnection();
+
+    const now = new Date();
+    await Event.updateMany(
+      { status: 'active', date: { $lt: now } },
+      { status: 'finished' }
+    );
 
     // Estadísticas generales calculadas en paralelo para minimizar el tiempo de ejecución
     const [
@@ -198,10 +204,10 @@ exports.reportHandler = async (event, context) => {
       { $sort: { total: -1 } },
       { $limit: 1 },
     ]);
-    let mostPopularEvent = null;
+    let actividadMasPopular = null;
     if (popularAgg.length > 0) {
       const ev = await Event.findById(popularAgg[0]._id, 'title');
-      mostPopularEvent = ev ? { title: ev.title, registrations: popularAgg[0].total } : null;
+      actividadMasPopular = ev ? { titulo: ev.title, inscripciones: popularAgg[0].total } : null;
     }
 
     // Categoría con más actividades creadas (agrupando eventos por categoría)
@@ -210,23 +216,23 @@ exports.reportHandler = async (event, context) => {
       { $sort: { total: -1 } },
       { $limit: 1 },
     ]);
-    let topCategory = null;
+    let categoriaMasPopular = null;
     if (categoryAgg.length > 0 && categoryAgg[0]._id) {
       const cat = await Category.findById(categoryAgg[0]._id, 'name');
-      topCategory = cat ? { name: cat.name, events: categoryAgg[0].total } : null;
+      categoriaMasPopular = cat ? { nombre: cat.name, totalActividades: categoryAgg[0].total } : null;
     }
 
-    // Objeto con todas las estadísticas calculadas, incluido en la respuesta de la Lambda
-    const stats = {
-      totalUsers,
-      totalOrganizers,
-      totalEvents,
-      activeEvents,
-      finishedEvents,
-      totalRegistrations,
-      mostPopularEvent,
-      topCategory,
-      generatedAt: new Date().toISOString(),
+    // Objeto con todas las estadísticas calculadas en español
+    const estadisticas = {
+      totalUsuarios: totalUsers,
+      totalOrganizadores: totalOrganizers,
+      totalActividades: totalEvents,
+      actividadesActivas: activeEvents,
+      actividadesFinalizadas: finishedEvents,
+      totalInscripciones: totalRegistrations,
+      actividadMasPopular,
+      categoriaMasPopular,
+      fechaGeneracion: new Date().toISOString(),
     };
 
     // Texto legible del reporte que se guarda como mensaje de la notificación
@@ -234,8 +240,8 @@ exports.reportHandler = async (event, context) => {
       `Reporte CommunityHub — ${totalUsers} usuarios (${totalOrganizers} organizadores), ` +
       `${totalEvents} actividades (${activeEvents} activas, ${finishedEvents} finalizadas), ` +
       `${totalRegistrations} inscripciones confirmadas.` +
-      (mostPopularEvent ? ` Actividad más popular: "${mostPopularEvent.title}".` : '') +
-      (topCategory ? ` Categoría más usada: "${topCategory.name}".` : '');
+      (actividadMasPopular ? ` Actividad más popular: "${actividadMasPopular.titulo}".` : '') +
+      (categoriaMasPopular ? ` Categoría más usada: "${categoriaMasPopular.nombre}".` : '');
 
     await Promise.all(
       admins.map((admin) =>
@@ -250,10 +256,10 @@ exports.reportHandler = async (event, context) => {
     return {
       statusCode: 200,
       body: JSON.stringify({
-        success: true,
-        message: 'Reporte periódico generado correctamente',
-        adminsNotified: admins.length,
-        stats,
+        exito: true,
+        mensaje: 'Reporte periódico generado correctamente',
+        administradoresNotificados: admins.length,
+        estadisticas,
       }),
     };
   } catch (error) {
@@ -261,7 +267,7 @@ exports.reportHandler = async (event, context) => {
     return {
       statusCode: 500,
       body: JSON.stringify({
-        success: false,
+        exito: false,
         error: error.message,
       }),
     };
