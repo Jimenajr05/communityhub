@@ -108,6 +108,19 @@ async function verParticipantes(actividad: any) {
   }
 }
 
+function formatearFechaRegistro(fechaRaw?: string | Date) {
+  if (!fechaRaw) return '—';
+  const f = new Date(fechaRaw);
+  if (isNaN(f.getTime())) return '—';
+  return f.toLocaleDateString('es-CR', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 async function guardar() {
   guardando.value = true;
   errorFormulario.value = '';
@@ -128,14 +141,30 @@ async function guardar() {
   }
 }
 
+const { confirmar } = useConfirm();
+
 async function cancelarActividad(actividad: any) {
-  if (!confirm(`¿Cancelar la actividad "${actividad.title}"? Se notificará a los participantes inscritos.`)) return;
+  const aceptado = await confirmar({
+    title: '¿Cancelar actividad?',
+    message: `¿Deseas cancelar "${actividad.title}"? Se notificará inmediatamente a los participantes inscritos.`,
+    confirmText: 'Sí, cancelar actividad',
+    cancelText: 'Volver',
+    type: 'warning',
+  });
+  if (!aceptado) return;
   await eventsStore.actualizarActividad(actividad._id, { status: 'cancelled' });
   await eventsStore.buscar({ organizer: authStore.usuario?.id });
 }
 
 async function eliminarActividad(actividad: any) {
-  if (!confirm(`¿Eliminar definitivamente "${actividad.title}"? Esta acción no se puede deshacer.`)) return;
+  const aceptado = await confirmar({
+    title: '¿Eliminar definitivamente?',
+    message: `¿Estás seguro de eliminar "${actividad.title}"? Esta acción no se puede deshacer y liberará los registros.`,
+    confirmText: 'Sí, eliminar actividad',
+    cancelText: 'Cancelar',
+    type: 'danger',
+  });
+  if (!aceptado) return;
   await eventsStore.eliminarActividad(actividad._id);
   await eventsStore.buscar({ organizer: authStore.usuario?.id });
 }
@@ -357,12 +386,27 @@ async function eliminarActividad(actividad: any) {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="p in participantes" :key="p._id">
+                <tr v-for="p in participantes" :key="p.registrationId || p._id">
                   <td>
-                    <strong>{{ p.user?.firstName }} {{ p.user?.lastName }}</strong>
+                    <div style="display: flex; align-items: center; gap: 0.6rem;">
+                      <span
+                        style="width: 1.75rem; height: 1.75rem; border-radius: 50%; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; background: linear-gradient(135deg, var(--ch-coral) 0%, var(--ch-marigold) 100%); font-family: var(--ch-font-mono); font-size: 0.65rem; font-weight: 700; color: #04060c;"
+                      >
+                        <img
+                          v-if="p.user?.profilePicture"
+                          :src="p.user.profilePicture"
+                          :alt="p.user?.firstName || 'Participante'"
+                          style="width: 100%; height: 100%; object-fit: cover;"
+                        />
+                        <template v-else>
+                          {{ (p.user?.firstName?.[0] || '') + (p.user?.lastName?.[0] || '') }}
+                        </template>
+                      </span>
+                      <strong>{{ p.user?.firstName }} {{ p.user?.lastName }}</strong>
+                    </div>
                   </td>
                   <td>{{ p.user?.email }}</td>
-                  <td>{{ new Date(p.createdAt).toLocaleDateString('es-CR') }}</td>
+                  <td>{{ formatearFechaRegistro(p.registeredAt || p.createdAt) }}</td>
                 </tr>
               </tbody>
             </table>

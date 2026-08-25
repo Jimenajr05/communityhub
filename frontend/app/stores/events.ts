@@ -18,6 +18,7 @@ export interface OrganizadorResumen {
   firstName: string;
   lastName: string;
   email?: string;
+  profilePicture?: string;
 }
 
 /** Representa una actividad/evento de la comunidad. */

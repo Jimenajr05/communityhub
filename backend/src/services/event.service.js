@@ -81,31 +81,42 @@ async function listEvents(query) {
     // Objeto de filtro de Mongo construido dinámicamente según los parámetros recibidos.
     const filter = {};
 
-    if (search) {
-        filter.title = { $regex: search, $options: 'i' };
+    if (search && typeof search === 'string' && search.trim()) {
+        filter.title = { $regex: search.trim(), $options: 'i' };
     }
 
     if (category) {
-        filter.category = category;
+        if (mongoose.Types.ObjectId.isValid(category)) {
+            filter.category = category;
+        } else {
+            const catDoc = await Category.findOne({ name: { $regex: `^${category}$`, $options: 'i' } });
+            if (catDoc) {
+                filter.category = catDoc._id;
+            } else {
+                return {
+                    events: [],
+                    pagination: { total: 0, page: 1, limit: DEFAULT_LIMIT, totalPages: 1 },
+                };
+            }
+        }
     }
 
-    if (location) {
-        filter.location = { $regex: location, $options: 'i' };
+    if (location && typeof location === 'string' && location.trim()) {
+        filter.location = { $regex: location.trim(), $options: 'i' };
     }
 
-    if (organizer) {
+    if (organizer && mongoose.Types.ObjectId.isValid(organizer)) {
         filter.organizer = organizer;
     }
 
     if (date) {
         const start = new Date(date);
-        if (Number.isNaN(start.getTime())) {
-            throw ApiError.badRequest('La fecha proporcionada no es válida');
+        if (!Number.isNaN(start.getTime())) {
+            // Rango de un día completo [start, end) para filtrar por fecha exacta.
+            const end = new Date(start);
+            end.setDate(end.getDate() + 1);
+            filter.date = { $gte: start, $lt: end };
         }
-        // Rango de un día completo [start, end) para filtrar por fecha exacta.
-        const end = new Date(start);
-        end.setDate(end.getDate() + 1);
-        filter.date = { $gte: start, $lt: end };
     }
 
     if (status) {
@@ -117,11 +128,11 @@ async function listEvents(query) {
     const events = await Event.find(filter)
         .sort({ date: 1 })
         .populate('category', 'name')
-        .populate('organizer', 'firstName lastName');
+        .populate('organizer', 'firstName lastName profilePicture');
 
     let withAvailability = await attachAvailability(events);
 
-    if (available === 'true') {
+    if (available === 'true' || available === true) {
         withAvailability = withAvailability.filter((event) => event.spotsAvailable > 0);
     }
 
@@ -155,7 +166,7 @@ async function getEventById(id) {
 
     const event = await Event.findById(id)
         .populate('category', 'name')
-        .populate('organizer', 'firstName lastName email');
+        .populate('organizer', 'firstName lastName email profilePicture');
 
     if (!event) {
         throw ApiError.notFound('Actividad no encontrada');

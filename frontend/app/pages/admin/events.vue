@@ -34,9 +34,18 @@ async function cargar() {
 // Al montar la página, carga la lista de actividades
 onMounted(cargar);
 
+const { confirmar } = useConfirm();
+
 /** Elimina definitivamente una actividad (previa confirmación) y refresca la lista. */
 async function eliminar(actividad: Actividad) {
-  if (!confirm(`¿Eliminar definitivamente "${actividad.title}"?`)) return;
+  const aceptado = await confirmar({
+    title: '¿Eliminar actividad?',
+    message: `¿Estás seguro de eliminar "${actividad.title}"? Esta acción borrará la actividad definitivamente de la base de datos.`,
+    confirmText: 'Sí, eliminar actividad',
+    cancelText: 'Cancelar',
+    type: 'danger',
+  });
+  if (!aceptado) return;
   await eventsStore.eliminarActividad(actividad._id);
   await cargar();
 }

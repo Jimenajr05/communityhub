@@ -49,87 +49,57 @@ async function cerrarSesion() {
           <span>Actividades</span>
         </NuxtLink>
 
-        <template v-if="authStore.estaAutenticado">
-          <NuxtLink to="/dashboard" class="app-header__link" @click="menuAbierto = false">
-            <LayoutGrid :size="15" :stroke-width="2" />
-            <span>Dashboard</span>
-          </NuxtLink>
+        <ClientOnly>
+          <template v-if="authStore.estaAutenticado">
+            <NuxtLink to="/dashboard" class="app-header__link" @click="menuAbierto = false">
+              <LayoutGrid :size="15" :stroke-width="2" />
+              <span>Dashboard</span>
+            </NuxtLink>
 
-          <NuxtLink to="/notificaciones" class="app-header__link app-header__notif-link" @click="menuAbierto = false">
-            <Bell :size="15" :stroke-width="2" />
-            <span>Avisos</span>
-            <span v-if="notificationsStore.sinLeerCount > 0" class="app-header__badge">
-              <span class="app-header__badge-pulse" />
-              {{ notificationsStore.sinLeerCount }}
-            </span>
-          </NuxtLink>
+            <NuxtLink to="/notificaciones" class="app-header__link app-header__notif-link" @click="menuAbierto = false">
+              <Bell :size="15" :stroke-width="2" />
+              <span>Avisos</span>
+              <span v-if="notificationsStore.sinLeerCount > 0" class="app-header__badge">
+                <span class="app-header__badge-pulse" />
+                {{ notificationsStore.sinLeerCount }}
+              </span>
+            </NuxtLink>
 
-          <NuxtLink to="/favoritos" class="app-header__link" @click="menuAbierto = false">
-            <Heart :size="15" :stroke-width="2" />
-            <span>Favoritos</span>
-          </NuxtLink>
+            <NuxtLink to="/favoritos" class="app-header__link" @click="menuAbierto = false">
+              <Heart :size="15" :stroke-width="2" />
+              <span>Favoritos</span>
+            </NuxtLink>
 
-          <NuxtLink to="/mis-inscripciones" class="app-header__link" @click="menuAbierto = false">
-            <Ticket :size="15" :stroke-width="2" />
-            <span>Pases</span>
-          </NuxtLink>
+            <NuxtLink to="/mis-inscripciones" class="app-header__link" @click="menuAbierto = false">
+              <Ticket :size="15" :stroke-width="2" />
+              <span>Pases</span>
+            </NuxtLink>
 
-          <NuxtLink
-            v-if="authStore.usuario?.role === 'organizador' || authStore.usuario?.role === 'administrador'"
-            to="/mis-actividades"
-            class="app-header__link"
-            @click="menuAbierto = false"
-          >
-            <LayoutGrid :size="15" :stroke-width="2" />
-            <span>Mis actividades</span>
-          </NuxtLink>
+            <NuxtLink
+              v-if="authStore.usuario?.role === 'organizador' || authStore.usuario?.role === 'administrador'"
+              to="/mis-actividades"
+              class="app-header__link"
+              @click="menuAbierto = false"
+            >
+              <LayoutGrid :size="15" :stroke-width="2" />
+              <span>Mis actividades</span>
+            </NuxtLink>
 
-          <NuxtLink
-            v-if="authStore.usuario?.role === 'administrador'"
-            to="/admin"
-            class="app-header__link app-header__link--admin"
-            @click="menuAbierto = false"
-          >
-            <ShieldCheck :size="15" :stroke-width="2" />
-            <span>Admin</span>
-          </NuxtLink>
-        </template>
+            <NuxtLink
+              v-if="authStore.usuario?.role === 'administrador'"
+              to="/admin"
+              class="app-header__link app-header__link--admin"
+              @click="menuAbierto = false"
+            >
+              <ShieldCheck :size="15" :stroke-width="2" />
+              <span>Admin</span>
+            </NuxtLink>
+          </template>
+        </ClientOnly>
 
         <!-- Bloque de usuario para drawer en móvil -->
-        <div v-if="authStore.estaAutenticado" class="app-header__mobile-user-group">
-          <NuxtLink to="/perfil" class="app-header__profile" @click="menuAbierto = false">
-            <span class="app-header__avatar">
-              <img
-                v-if="authStore.usuario?.profilePicture"
-                :src="authStore.usuario.profilePicture"
-                alt="Foto"
-                class="app-header__avatar-img"
-              />
-              <User v-else :size="13" :stroke-width="2.2" />
-            </span>
-            <span class="app-header__username">{{ authStore.usuario?.firstName }}</span>
-          </NuxtLink>
-
-          <button type="button" class="app-header__logout" title="Cerrar sesión" @click="cerrarSesion">
-            <LogOut :size="14" :stroke-width="2" />
-            <span class="app-header__logout-text">Salir</span>
-          </button>
-        </div>
-
-        <div v-else class="app-header__mobile-auth">
-          <NuxtLink to="/login" class="app-header__link app-header__link--login" @click="menuAbierto = false">
-            Iniciar sesión
-          </NuxtLink>
-          <NuxtLink to="/registro" class="pill-btn pill-btn--primary app-header__cta" @click="menuAbierto = false">
-            Crear cuenta
-          </NuxtLink>
-        </div>
-      </nav>
-
-      <!-- 3. Acciones de usuario / Auth (Derecha en Desktop) + Botón hamburguesa -->
-      <div class="app-header__actions">
-        <template v-if="authStore.estaAutenticado">
-          <div class="app-header__user-group">
+        <ClientOnly>
+          <div v-if="authStore.estaAutenticado" class="app-header__mobile-user-group">
             <NuxtLink to="/perfil" class="app-header__profile" @click="menuAbierto = false">
               <span class="app-header__avatar">
                 <img
@@ -148,18 +118,54 @@ async function cerrarSesion() {
               <span class="app-header__logout-text">Salir</span>
             </button>
           </div>
-        </template>
 
-        <template v-else>
-          <div class="app-header__desktop-auth">
-            <NuxtLink to="/login" class="app-header__link app-header__link--login">
+          <div v-else class="app-header__mobile-auth">
+            <NuxtLink to="/login" class="app-header__link app-header__link--login" @click="menuAbierto = false">
               Iniciar sesión
             </NuxtLink>
-            <NuxtLink to="/registro" class="pill-btn pill-btn--primary app-header__cta">
+            <NuxtLink to="/registro" class="pill-btn pill-btn--primary app-header__cta" @click="menuAbierto = false">
               Crear cuenta
             </NuxtLink>
           </div>
-        </template>
+        </ClientOnly>
+      </nav>
+
+      <!-- 3. Acciones de usuario / Auth (Derecha en Desktop) + Botón hamburguesa -->
+      <div class="app-header__actions">
+        <ClientOnly>
+          <template v-if="authStore.estaAutenticado">
+            <div class="app-header__user-group">
+              <NuxtLink to="/perfil" class="app-header__profile" @click="menuAbierto = false">
+                <span class="app-header__avatar">
+                  <img
+                    v-if="authStore.usuario?.profilePicture"
+                    :src="authStore.usuario.profilePicture"
+                    alt="Foto"
+                    class="app-header__avatar-img"
+                  />
+                  <User v-else :size="13" :stroke-width="2.2" />
+                </span>
+                <span class="app-header__username">{{ authStore.usuario?.firstName }}</span>
+              </NuxtLink>
+
+              <button type="button" class="app-header__logout" title="Cerrar sesión" @click="cerrarSesion">
+                <LogOut :size="14" :stroke-width="2" />
+                <span class="app-header__logout-text">Salir</span>
+              </button>
+            </div>
+          </template>
+
+          <template v-else>
+            <div class="app-header__desktop-auth">
+              <NuxtLink to="/login" class="app-header__link app-header__link--login">
+                Iniciar sesión
+              </NuxtLink>
+              <NuxtLink to="/registro" class="pill-btn pill-btn--primary app-header__cta">
+                Crear cuenta
+              </NuxtLink>
+            </div>
+          </template>
+        </ClientOnly>
 
         <!-- Botón hamburguesa para móvil y tablet -->
         <button

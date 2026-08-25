@@ -106,7 +106,15 @@ const organizadorIniciales = computed(() => {
         </div>
 
         <div class="event-node-card__organizer" :title="`Organizado por ${actividad.organizer?.firstName || 'Comunidad'}`">
-          <span class="event-node-card__organizer-avatar">{{ organizadorIniciales }}</span>
+          <span class="event-node-card__organizer-avatar">
+            <img
+              v-if="actividad.organizer?.profilePicture"
+              :src="actividad.organizer.profilePicture"
+              :alt="actividad.organizer?.firstName || 'Organizador'"
+              class="event-node-card__organizer-avatar-img"
+            />
+            <template v-else>{{ organizadorIniciales }}</template>
+          </span>
           <span class="event-node-card__organizer-name">
             {{ actividad.organizer?.firstName }} {{ actividad.organizer?.lastName }}
           </span>
@@ -429,6 +437,13 @@ const organizadorIniciales = computed(() => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.event-node-card__organizer-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .event-node-card__organizer-name {

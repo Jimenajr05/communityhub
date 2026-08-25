@@ -16,8 +16,17 @@ onMounted(async () => {
   cargando.value = false;
 });
 
+const { confirmar } = useConfirm();
+
 async function cancelar(eventId: string) {
-  if (!confirm('¿Estás seguro de que deseas cancelar tu inscripción a esta actividad? Tu cupo será liberado para otra persona.')) return;
+  const aceptado = await confirmar({
+    title: '¿Cancelar pase de inscripción?',
+    message: '¿Estás seguro de que deseas cancelar tu inscripción? Tu cupo será liberado inmediatamente para otra persona.',
+    confirmText: 'Sí, cancelar inscripción',
+    cancelText: 'Conservar pase',
+    type: 'warning',
+  });
+  if (!aceptado) return;
   await eventsStore.cancelarInscripcion(eventId);
 }
 

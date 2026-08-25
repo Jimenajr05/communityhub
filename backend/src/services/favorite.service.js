@@ -53,7 +53,7 @@ async function getUserFavorites(userId) {
       path: 'event',
       populate: [
         { path: 'category', select: 'name' },
-        { path: 'organizer', select: 'firstName lastName email' },
+        { path: 'organizer', select: 'firstName lastName email profilePicture' },
       ],
     });
 
