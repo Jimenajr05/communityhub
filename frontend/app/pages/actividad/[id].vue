@@ -164,6 +164,14 @@ const organizadorIniciales = computed(() => {
   const l = actividad.value?.organizer?.lastName?.[0] || '';
   return `${f}${l}`.toUpperCase() || 'ORG';
 });
+
+const infoEstado = computed(() => {
+  return getEventStatus(
+    actividad.value?.status,
+    actividad.value?.date,
+    actividad.value?.time
+  );
+});
 </script>
 
 <template>
@@ -194,9 +202,9 @@ const organizadorIniciales = computed(() => {
                 {{ actividad.category?.name ?? 'Comunidad' }}
               </span>
 
-              <span class="dossier-status" :class="`dossier-status--${actividad.status}`">
+              <span class="dossier-status" :class="infoEstado.badgeClass">
                 <span class="status-dot" />
-                {{ actividad.status === 'active' ? 'Activa' : actividad.status === 'cancelled' ? 'Cancelada' : 'Finalizada' }}
+                {{ infoEstado.label }}
               </span>
             </div>
 
@@ -216,6 +224,11 @@ const organizadorIniciales = computed(() => {
                 <span class="dossier-organizer__label">Organizado por</span>
                 <strong class="dossier-organizer__name">{{ organizadorNombre }}</strong>
               </div>
+            </div>
+
+            <!-- Imagen principal de la actividad -->
+            <div v-if="actividad.image" class="dossier-hero-image">
+              <img :src="actividad.image" :alt="actividad.title" class="dossier-hero-image__img" />
             </div>
           </header>
 
@@ -332,10 +345,10 @@ const organizadorIniciales = computed(() => {
               <button
                 v-if="!estaInscrito"
                 class="pill-btn pill-btn--primary reservation-btn"
-                :disabled="sinCupo || actividad.status !== 'active' || procesandoAccion"
+                :disabled="sinCupo || !infoEstado.canRegister || procesandoAccion"
                 @click="alternarInscripcion"
               >
-                {{ procesandoAccion ? 'Procesando...' : sinCupo ? 'Cupos agotados' : 'Inscribirme a esta actividad' }}
+                {{ procesandoAccion ? 'Procesando...' : infoEstado.code === 'cancelled' ? 'Actividad cancelada' : infoEstado.code === 'finished' ? 'Actividad finalizada' : sinCupo ? 'Cupos agotados' : infoEstado.code === 'ongoing' ? 'Inscribirme (En curso)' : 'Inscribirme a esta actividad' }}
               </button>
 
               <button
@@ -469,6 +482,18 @@ const organizadorIniciales = computed(() => {
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
+.dossier-status--scheduled {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--ch-leaf);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.dossier-status--ongoing {
+  background: rgba(6, 182, 212, 0.15);
+  color: var(--ch-teal);
+  border-color: rgba(6, 182, 212, 0.35);
+}
+
 .dossier-status--cancelled {
   background: rgba(244, 63, 94, 0.12);
   color: var(--ch-rose);
@@ -503,8 +528,26 @@ const organizadorIniciales = computed(() => {
   border-radius: var(--ch-radius-sm);
   background: var(--ch-paper-2);
   border: 1px solid var(--ch-line);
-  margin-bottom: 2rem;
+  margin-bottom: 1.75rem;
   width: fit-content;
+}
+
+.dossier-hero-image {
+  width: 100%;
+  height: clamp(14rem, 28vw, 22rem);
+  border-radius: var(--ch-radius-md);
+  overflow: hidden;
+  margin-bottom: 2rem;
+  border: 1px solid var(--ch-line);
+  box-shadow: var(--ch-shadow-md);
+  position: relative;
+}
+
+.dossier-hero-image__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .dossier-organizer__avatar {

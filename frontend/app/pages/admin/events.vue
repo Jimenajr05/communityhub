@@ -119,9 +119,9 @@ const actividadesFiltradas = computed(() => {
                 <span class="date-cell">{{ new Date(actividad.date).toLocaleDateString('es-CR', { day: 'numeric', month: 'short', year: 'numeric' }) }}</span>
               </td>
               <td>
-                <span class="status-pill" :class="`status-pill--${actividad.status}`">
+                <span class="status-pill" :class="getEventStatus(actividad.status, actividad.date, actividad.time).className">
                   <span class="status-dot" />
-                  {{ etiquetaEstado(actividad.status) }}
+                  {{ getEventStatus(actividad.status, actividad.date, actividad.time).label }}
                 </span>
               </td>
               <td>
@@ -227,14 +227,26 @@ const actividadesFiltradas = computed(() => {
   border-radius: 50%;
 }
 
-.status-pill--active {
+.status-pill--active,
+.status-pill--scheduled {
   background: rgba(16, 185, 129, 0.15);
   color: var(--ch-leaf);
 }
 
-.status-pill--active .status-dot {
+.status-pill--active .status-dot,
+.status-pill--scheduled .status-dot {
   background: var(--ch-leaf);
   box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+}
+
+.status-pill--ongoing {
+  background: rgba(6, 182, 212, 0.15);
+  color: var(--ch-teal);
+}
+
+.status-pill--ongoing .status-dot {
+  background: var(--ch-teal);
+  box-shadow: 0 0 6px rgba(6, 182, 212, 0.5);
 }
 
 .status-pill--cancelled {

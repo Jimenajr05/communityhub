@@ -41,7 +41,13 @@ const organizadorIniciales = computed(() => {
   >
     <!-- Cabecera de la tarjeta con aura de color e indicador de fecha -->
     <div class="event-node-card__cover">
-      <div class="ch-constellation event-node-card__cover-pattern" aria-hidden="true" />
+      <img
+        v-if="actividad.image"
+        :src="actividad.image"
+        :alt="actividad.title"
+        class="event-node-card__cover-img"
+      />
+      <div v-else class="ch-constellation event-node-card__cover-pattern" aria-hidden="true" />
       <div class="event-node-card__glow-layer" />
 
       <!-- Chip de fecha tipo sello técnico -->
@@ -159,8 +165,17 @@ const organizadorIniciales = computed(() => {
   overflow: hidden;
 }
 
-.event-node-card--featured .event-node-card__cover {
-  height: 9.5rem;
+.event-node-card__cover-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.event-node-card:hover .event-node-card__cover-img {
+  transform: scale(1.05);
 }
 
 .event-node-card__cover-pattern {

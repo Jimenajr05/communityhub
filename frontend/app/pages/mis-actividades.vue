@@ -20,13 +20,16 @@ const errorFormulario = ref('');
 
 interface Participante {
   _id: string;
+  registrationId?: string;
   user: {
     _id?: string;
     firstName: string;
     lastName: string;
     email: string;
+    profilePicture?: string;
   };
   status: string;
+  registeredAt?: string;
   createdAt: string;
 }
 
@@ -44,6 +47,7 @@ const form = reactive({
   time: '',
   location: '',
   capacity: 20,
+  image: '',
 });
 
 function resetFormulario() {
@@ -54,6 +58,7 @@ function resetFormulario() {
   form.time = '';
   form.location = '';
   form.capacity = 20;
+  form.image = '';
   editandoId.value = null;
   errorFormulario.value = '';
 }
@@ -79,6 +84,7 @@ function abrirEdicion(actividad: any) {
   form.time = actividad.time;
   form.location = actividad.location;
   form.capacity = actividad.capacity;
+  form.image = actividad.image ?? '';
   mostrarFormulario.value = true;
 }
 
@@ -240,10 +246,10 @@ async function eliminarActividad(actividad: any) {
               <td>
                 <span
                   class="status-pill"
-                  :class="act.status === 'active' ? 'status-pill--active' : act.status === 'cancelled' ? 'status-pill--cancelled' : 'status-pill--finished'"
+                  :class="getEventStatus(act.status, act.date, act.time).className"
                 >
                   <span class="status-dot" />
-                  {{ act.status === 'active' ? 'Activa' : act.status === 'cancelled' ? 'Cancelada' : 'Finalizada' }}
+                  {{ getEventStatus(act.status, act.date, act.time).label }}
                 </span>
               </td>
               <td>
@@ -340,6 +346,14 @@ async function eliminarActividad(actividad: any) {
             <div class="field">
               <label for="act-desc">Descripción de la actividad</label>
               <textarea id="act-desc" v-model.trim="form.description" rows="4" placeholder="Explica los detalles, qué deben llevar los participantes y la dinámica del evento..." required />
+            </div>
+
+            <div class="field">
+              <label for="act-image">URL de imagen de portada (opcional)</label>
+              <input id="act-image" v-model.trim="form.image" type="url" placeholder="https://ejemplo.com/foto.jpg o enlace web de la imagen" />
+              <div v-if="form.image" class="image-preview-wrap">
+                <img :src="form.image" alt="Vista previa de portada" class="image-preview" />
+              </div>
             </div>
 
             <p v-if="errorFormulario" class="form-error">{{ errorFormulario }}</p>
@@ -517,11 +531,22 @@ async function eliminarActividad(actividad: any) {
   border-radius: var(--ch-radius-full);
 }
 
-.status-pill--active {
+.status-pill--active,
+.status-pill--scheduled {
   background: rgba(16, 185, 129, 0.15);
   color: var(--ch-leaf);
 }
-.status-pill--active .status-dot { background: var(--ch-leaf); }
+.status-pill--active .status-dot,
+.status-pill--scheduled .status-dot { background: var(--ch-leaf); }
+
+.status-pill--ongoing {
+  background: rgba(6, 182, 212, 0.15);
+  color: var(--ch-teal);
+}
+.status-pill--ongoing .status-dot {
+  background: var(--ch-teal);
+  box-shadow: 0 0 6px rgba(6, 182, 212, 0.5);
+}
 
 .status-pill--cancelled {
   background: rgba(244, 63, 94, 0.15);
@@ -631,5 +656,19 @@ async function eliminarActividad(actividad: any) {
   justify-content: flex-end;
   gap: 0.75rem;
   margin-top: 1.5rem;
+}
+.image-preview-wrap {
+  margin-top: 0.5rem;
+  border-radius: var(--ch-radius-sm);
+  overflow: hidden;
+  max-height: 130px;
+  border: 1px solid var(--ch-line);
+}
+
+.image-preview {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  display: block;
 }
 </style>

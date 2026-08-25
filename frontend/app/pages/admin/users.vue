@@ -19,6 +19,7 @@ interface UsuarioAdmin {
   lastName: string;
   email: string;
   role: 'administrador' | 'organizador' | 'usuario';
+  profilePicture?: string;
 }
 
 // Lista de usuarios registrados en la plataforma
@@ -217,7 +218,17 @@ const usuariosFiltrados = computed(() => {
             <tr v-for="usuario in usuariosFiltrados" :key="usuario._id">
               <td>
                 <div class="person-cell">
-                  <span class="person-avatar" :class="`person-avatar--${usuario.role}`">{{ iniciales(usuario) }}</span>
+                  <span class="person-avatar" :class="`person-avatar--${usuario.role}`">
+                    <img
+                      v-if="usuario.profilePicture"
+                      :src="usuario.profilePicture"
+                      :alt="`${usuario.firstName} ${usuario.lastName}`"
+                      class="person-avatar-img"
+                    />
+                    <template v-else>
+                      {{ iniciales(usuario) }}
+                    </template>
+                  </span>
                   <div class="person-info">
                     <div class="person-name-row">
                       <strong>{{ usuario.firstName }} {{ usuario.lastName }}</strong>
@@ -395,6 +406,13 @@ const usuariosFiltrados = computed(() => {
   font-weight: 700;
   color: #04060c;
   border: 1px solid transparent;
+  overflow: hidden;
+}
+
+.person-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .person-avatar--usuario {

@@ -3,13 +3,16 @@
   Lista las actividades a las que el usuario está inscrito y permite cancelar la participación.
 -->
 <script setup lang="ts">
-import { XCircle, Compass, CalendarDays, MapPin, Clock, Ticket } from 'lucide-vue-next';
+import { XCircle, Compass, CalendarDays, MapPin, Clock, Ticket, CheckCircle2, AlertCircle } from 'lucide-vue-next';
+import type { Inscripcion } from '~/stores/events';
 
 definePageMeta({ middleware: 'auth' });
 useHead({ title: 'Mis inscripciones · CommunityHub' });
 
 const eventsStore = useEventsStore();
 const cargando = ref(true);
+const cancelandoId = ref<string | null>(null);
+const mensajeAlerta = ref<{ tipo: 'error' | 'exito'; texto: string } | null>(null);
 
 onMounted(async () => {
   await eventsStore.obtenerMisInscripciones();
@@ -27,11 +30,59 @@ async function cancelar(eventId: string) {
     type: 'warning',
   });
   if (!aceptado) return;
-  await eventsStore.cancelarInscripcion(eventId);
+
+  cancelandoId.value = eventId;
+  mensajeAlerta.value = null;
+
+  try {
+    await eventsStore.cancelarInscripcion(eventId);
+    mensajeAlerta.value = {
+      tipo: 'exito',
+      texto: 'Tu inscripción ha sido cancelada correctamente.',
+    };
+  } catch (err: unknown) {
+    const fetchError = err as { data?: { message?: string } };
+    mensajeAlerta.value = {
+      tipo: 'error',
+      texto: fetchError?.data?.message || 'No se pudo cancelar la inscripción.',
+    };
+  } finally {
+    cancelandoId.value = null;
+  }
 }
 
-function esFutura(fecha: string) {
+function esFutura(fecha?: string) {
+  if (!fecha) return false;
   return new Date(fecha) >= new Date();
+}
+
+function estadoInscripcion(ins: Inscripcion) {
+  if (ins.status === 'cancelled') {
+    return {
+      texto: 'Cancelada',
+      clase: 'status-pill--cancelled',
+    };
+  }
+  if (ins.event?.status === 'cancelled') {
+    return {
+      texto: 'Actividad cancelada',
+      clase: 'status-pill--cancelled',
+    };
+  }
+  if (!ins.event?.date || !esFutura(ins.event.date) || ins.event.status === 'finished') {
+    return {
+      texto: 'Finalizada',
+      clase: 'status-pill--past',
+    };
+  }
+  return {
+    texto: 'Confirmada (Próxima)',
+    clase: 'status-pill--upcoming',
+  };
+}
+
+function puedeCancelar(ins: Inscripcion) {
+  return ins.status === 'confirmed' && ins.event?.status === 'active' && Boolean(ins.event?.date) && esFutura(ins.event?.date);
 }
 </script>
 
@@ -42,8 +93,19 @@ function esFutura(fecha: string) {
       <header class="panel-header">
         <span class="panel-eyebrow">Tu agenda comunitaria</span>
         <h1>Mis inscripciones y pases</h1>
-        <p>Actividades y encuentros comunitarios en los que tienes un cupo confirmado.</p>
+        <p>Actividades y encuentros comunitarios en los que tienes un cupo registrado.</p>
       </header>
+
+      <!-- Banner de Notificación / Alerta de Acción -->
+      <div
+        v-if="mensajeAlerta"
+        class="admin-alert"
+        :class="`admin-alert--${mensajeAlerta.tipo}`"
+      >
+        <CheckCircle2 v-if="mensajeAlerta.tipo === 'exito'" :size="16" :stroke-width="2.2" />
+        <AlertCircle v-else :size="16" :stroke-width="2.2" />
+        <span>{{ mensajeAlerta.texto }}</span>
+      </div>
 
       <p v-if="cargando" class="panel-empty">Consultando tus pases activos...</p>
 
@@ -78,36 +140,50 @@ function esFutura(fecha: string) {
           <tbody>
             <tr v-for="ins in eventsStore.misInscripciones" :key="ins._id">
               <td>
-                <NuxtLink :to="`/actividad/${ins.event._id}`" class="activity-link">
+                <NuxtLink v-if="ins.event" :to="`/actividad/${ins.event._id}`" class="activity-link">
                   <strong>{{ ins.event.title }}</strong>
                 </NuxtLink>
+                <span v-else class="activity-link-deleted">Actividad no disponible</span>
               </td>
               <td>
-                <div class="date-cell">
+                <div v-if="ins.event?.date" class="date-cell">
                   <span class="table-date">
                     {{ new Date(ins.event.date).toLocaleDateString('es-CR', { day: 'numeric', month: 'short', year: 'numeric' }) }}
                   </span>
                   <span v-if="ins.event.time" class="table-time">{{ ins.event.time }}</span>
                 </div>
+                <span v-else class="table-time">—</span>
               </td>
               <td>
-                <span class="table-location">{{ ins.event.location }}</span>
+                <span class="table-location">{{ ins.event?.location || '—' }}</span>
               </td>
               <td>
-                <span class="status-pill" :class="esFutura(ins.event.date) ? 'status-pill--upcoming' : 'status-pill--past'">
+                <span class="status-pill" :class="estadoInscripcion(ins).clase">
                   <span class="status-dot" />
-                  {{ esFutura(ins.event.date) ? 'Confirmada (Próxima)' : 'Finalizada' }}
+                  {{ estadoInscripcion(ins).texto }}
                 </span>
               </td>
               <td>
                 <button
+                  v-if="puedeCancelar(ins)"
                   type="button"
                   class="action-pill action-pill--cancel"
+                  :disabled="cancelandoId === ins.event?._id"
                   title="Cancelar inscripción y liberar cupo"
                   @click="cancelar(ins.event._id)"
                 >
-                  <XCircle :size="14" :stroke-width="2.2" /> Cancelar cupo
+                  <XCircle :size="14" :stroke-width="2.2" />
+                  {{ cancelandoId === ins.event?._id ? 'Cancelando...' : 'Cancelar cupo' }}
                 </button>
+                <span v-else-if="ins.status === 'cancelled'" class="action-status-text">
+                  Pase cancelado
+                </span>
+                <span v-else-if="ins.event?.status === 'cancelled'" class="action-status-text">
+                  Cancelada por organizador
+                </span>
+                <span v-else class="action-status-text">
+                  Evento concluido
+                </span>
               </td>
             </tr>
           </tbody>
@@ -156,6 +232,12 @@ function esFutura(fecha: string) {
 
 .activity-link:hover {
   color: var(--ch-coral-light);
+}
+
+.activity-link-deleted {
+  color: var(--ch-text-on-paper-dim);
+  font-size: 0.92rem;
+  font-style: italic;
 }
 
 .date-cell {
@@ -207,6 +289,15 @@ function esFutura(fecha: string) {
   background: var(--ch-text-on-paper-muted);
 }
 
+.status-pill--cancelled {
+  background: rgba(244, 63, 94, 0.12);
+  color: var(--ch-rose);
+}
+.status-pill--cancelled .status-dot {
+  background: var(--ch-rose);
+  box-shadow: 0 0 6px rgba(244, 63, 94, 0.4);
+}
+
 .action-pill {
   display: inline-flex;
   align-items: center;
@@ -227,9 +318,44 @@ function esFutura(fecha: string) {
   color: var(--ch-rose);
 }
 
-.action-pill--cancel:hover {
+.action-pill--cancel:hover:not(:disabled) {
   background: var(--ch-rose);
   color: #ffffff;
   box-shadow: 0 4px 12px rgba(244, 63, 94, 0.35);
 }
+
+.action-pill--cancel:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.action-status-text {
+  font-family: var(--ch-font-mono);
+  font-size: 0.76rem;
+  color: var(--ch-text-on-paper-dim);
+}
+
+.admin-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1.15rem;
+  border-radius: var(--ch-radius-sm);
+  margin-bottom: 1.25rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.admin-alert--exito {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+}
+
+.admin-alert--error {
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  color: #fca5a5;
+}
 </style>
+
