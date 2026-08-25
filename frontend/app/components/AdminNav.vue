@@ -1,6 +1,6 @@
 <!-- Barra de navegación lateral del panel de administración -->
 <script setup lang="ts">
-import { LayoutGrid, Users, CalendarDays, Tag, BarChart3 } from 'lucide-vue-next';
+import { LayoutGrid, Users, CalendarDays, Tag, BarChart3, Zap } from 'lucide-vue-next';
 </script>
 
 <template>
@@ -10,6 +10,7 @@ import { LayoutGrid, Users, CalendarDays, Tag, BarChart3 } from 'lucide-vue-next
     <NuxtLink to="/admin/events"><CalendarDays :size="14" :stroke-width="2.2" /> Actividades</NuxtLink>
     <NuxtLink to="/admin/categories"><Tag :size="14" :stroke-width="2.2" /> Categorías</NuxtLink>
     <NuxtLink to="/admin/statistics"><BarChart3 :size="14" :stroke-width="2.2" /> Estadísticas</NuxtLink>
+    <NuxtLink to="/admin/reporte"><Zap :size="14" :stroke-width="2.2" /> Reporte Lambda</NuxtLink>
   </nav>
 </template>
 

@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Sparkles,
   Layers,
+  Zap,
 } from 'lucide-vue-next';
 import type { Notificacion } from '~/stores/notifications';
 
@@ -76,9 +77,20 @@ function formatearFecha(fechaIso: string): string {
   return `${fecha.toLocaleDateString('es-CR', { day: 'numeric', month: 'short' })} · ${fecha.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
+function obtenerMensajeNotificacion(notif: Notificacion): string {
+  if (notif.type === 'report') {
+    return 'Reporte periódico de CommunityHub generado con el resumen de métricas, actividades e inscripciones.';
+  }
+  return notif.message;
+}
+
 async function marcarLeida(notif: Notificacion) {
   if (notif.isRead) return;
   await notificationsStore.marcarLeida(notif._id);
+}
+
+async function onNotifClick(notif: Notificacion) {
+  await marcarLeida(notif);
 }
 
 async function marcarTodas() {
@@ -200,6 +212,7 @@ async function eliminar(id: string) {
             <CalendarCheck2 v-if="notif.type === 'reminder'" :size="18" :stroke-width="2" />
             <Ticket v-else-if="notif.type === 'registration'" :size="18" :stroke-width="2" />
             <AlertCircle v-else-if="notif.type === 'event_update'" :size="18" :stroke-width="2" />
+            <Zap v-else-if="notif.type === 'report'" :size="18" :stroke-width="2" />
             <BellRing v-else :size="18" :stroke-width="2" />
           </div>
 
@@ -209,9 +222,14 @@ async function eliminar(id: string) {
               <span class="notif-item__time">{{ formatearFecha(notif.createdAt) }}</span>
             </div>
 
-            <p class="notif-item__message">{{ notif.message }}</p>
+            <p class="notif-item__message">{{ obtenerMensajeNotificacion(notif) }}</p>
 
-            <div v-if="notif.event" class="notif-item__event-link">
+            <div v-if="notif.type === 'report'" class="notif-item__event-link">
+              <NuxtLink to="/admin/reporte" class="event-ref">
+                Ver reporte completo →
+              </NuxtLink>
+            </div>
+            <div v-else-if="notif.event" class="notif-item__event-link">
               <NuxtLink :to="`/actividad/${notif.event._id || notif.event}`" class="event-ref">
                 Ver actividad relacionada →
               </NuxtLink>

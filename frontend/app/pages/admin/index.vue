@@ -4,7 +4,7 @@
   a las secciones de usuarios, actividades, categorías y estadísticas.
 -->
 <script setup lang="ts">
-import { Users, CalendarDays, Tag, BarChart3, ArrowRight, Shield, Waypoints } from 'lucide-vue-next';
+import { Users, CalendarDays, Tag, BarChart3, ArrowRight, Shield, Waypoints, Zap } from 'lucide-vue-next';
 
 definePageMeta({ middleware: 'admin' });
 useHead({ title: 'Administración · CommunityHub' });
@@ -63,6 +63,17 @@ useHead({ title: 'Administración · CommunityHub' });
           <div class="admin-module__content">
             <h3>Estadísticas y Métricas</h3>
             <p>Consulta usuarios registrados, actividades publicadas, inscripciones y categorías activas.</p>
+          </div>
+          <ArrowRight class="admin-module__arrow" :size="17" :stroke-width="2.2" />
+        </NuxtLink>
+
+        <NuxtLink to="/admin/reporte" class="admin-module">
+          <div class="admin-module__icon-wrap admin-module__icon-wrap--lambda">
+            <Zap :size="22" :stroke-width="1.8" />
+          </div>
+          <div class="admin-module__content">
+            <h3>Reporte Lambda</h3>
+            <p>Visualiza el último reporte periódico generado automáticamente por AWS Lambda con métricas clave.</p>
           </div>
           <ArrowRight class="admin-module__arrow" :size="17" :stroke-width="2.2" />
         </NuxtLink>
@@ -154,6 +165,12 @@ useHead({ title: 'Administración · CommunityHub' });
   background: rgba(16, 185, 129, 0.12);
   border-color: rgba(16, 185, 129, 0.25);
   color: var(--ch-leaf);
+}
+
+.admin-module__icon-wrap--lambda {
+  background: rgba(244, 63, 94, 0.12);
+  border-color: rgba(244, 63, 94, 0.25);
+  color: var(--ch-rose);
 }
 
 .admin-module__content {
