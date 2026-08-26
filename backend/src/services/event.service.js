@@ -26,11 +26,29 @@ async function attachAvailability(events) {
             });
             const plain = event.toObject ? event.toObject() : event;
 
-            // Si la fecha de la actividad ya transcurrió y su estado seguía 'active', se actualiza a 'finished'
             let status = plain.status;
-            if (status === 'active' && plain.date && new Date(plain.date) < now) {
-                status = 'finished';
-                Event.findByIdAndUpdate(plain._id, { status: 'finished' }).catch(() => {});
+            if (status !== 'cancelled') {
+                const baseDate = new Date(plain.date);
+                if (!isNaN(baseDate.getTime())) {
+                    const end = new Date(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), baseDate.getUTCDate());
+                    if (plain.time) {
+                        const match = String(plain.time).toLowerCase().trim().match(/^(\d{1,2}):(\d{2})\s*(am|pm)?$/);
+                        if (match) {
+                            let h = parseInt(match[1], 10);
+                            const m = parseInt(match[2], 10);
+                            const meridian = match[3];
+                            if (meridian === 'pm' && h < 12) h += 12;
+                            if (meridian === 'am' && h === 12) h = 0;
+                            end.setHours(h + 2, m, 0, 0);
+                        } else {
+                            end.setHours(23, 59, 59, 999);
+                        }
+                    } else {
+                        end.setHours(23, 59, 59, 999);
+                    }
+
+                    status = now > end ? 'finished' : 'active';
+                }
             }
 
             return {
@@ -92,7 +110,12 @@ async function listEvents(query) {
     const filter = {};
 
     if (search && typeof search === 'string' && search.trim()) {
-        filter.title = { $regex: search.trim(), $options: 'i' };
+        const term = search.trim();
+        filter.$or = [
+            { title: { $regex: term, $options: 'i' } },
+            { description: { $regex: term, $options: 'i' } },
+            { location: { $regex: term, $options: 'i' } },
+        ];
     }
 
     if (category) {
@@ -124,10 +147,10 @@ async function listEvents(query) {
         const parts = dateStr.split('-').map(Number);
         if (parts.length === 3 && !parts.some(Number.isNaN)) {
             const [year, month, day] = parts;
-            // Abarca el día calendario completo tolerando desfases de zona horaria (UTC-12 a UTC+14)
-            const startRange = new Date(Date.UTC(year, month - 1, day - 1, 12, 0, 0));
-            const endRange = new Date(Date.UTC(year, month - 1, day + 1, 12, 0, 0));
-            filter.date = { $gte: startRange, $lt: endRange };
+            // Las fechas en BD se guardan como medianoche UTC. Filtramos el día exacto en UTC.
+            const startRange = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+            const endRange   = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+            filter.date = { $gte: startRange, $lte: endRange };
         } else {
             const start = new Date(date);
             if (!Number.isNaN(start.getTime())) {
@@ -141,7 +164,9 @@ async function listEvents(query) {
     if (status) {
         filter.status = status;
     } else if (!organizer) {
-        filter.status = 'active';
+        // En el catálogo público se muestran tanto las actividades activas como las finalizadas
+        // (solo se excluyen las actividades canceladas)
+        filter.status = { $ne: 'cancelled' };
     }
 
     const events = await Event.find(filter)

@@ -18,7 +18,7 @@ const SALT_ROUNDS = 10;
  * @param {string} [params.profilePicture] - URL de la foto de perfil (opcional).
  * @returns {Promise<{user: Object, token: string}>} Usuario saneado (sin contraseña) y token JWT generado.
  */
-async function register({ firstName, lastName, email, password, profilePicture }) {
+async function register({ firstName, lastName, email, password, profilePicture, role }) {
   const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
   if (existingUser) {
     throw ApiError.conflict('Ya existe una cuenta registrada con este correo electrónico');
@@ -26,12 +26,16 @@ async function register({ firstName, lastName, email, password, profilePicture }
 
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
+  // Solo se permite auto-registrarse como 'usuario' u 'organizador' (no 'administrador')
+  const assignedRole = role === 'organizador' ? 'organizador' : 'usuario';
+
   const user = await User.create({
     firstName,
     lastName,
     email,
     password: hashedPassword,
     profilePicture: profilePicture || null,
+    role: assignedRole,
   });
 
   const token = generateToken({ id: user._id, role: user.role });

@@ -25,7 +25,9 @@ async function registerToEvent(userId, eventId) {
     throw ApiError.badRequest('No es posible inscribirse a una actividad cancelada o finalizada');
   }
 
-  if (new Date(event.date) < new Date()) {
+  const eventEndOfDay = new Date(event.date);
+  eventEndOfDay.setUTCHours(23, 59, 59, 999);
+  if (eventEndOfDay < new Date()) {
     throw ApiError.badRequest('No puedes inscribirte a una actividad que ya ha transcurrido');
   }
 

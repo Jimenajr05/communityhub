@@ -33,15 +33,20 @@ const eventSchema = new mongoose.Schema(
       ref: 'Category',
       required: [true, 'La categoría es obligatoria'],
     },
-    /** Fecha del evento; se valida que no sea una fecha en el pasado. */
+    /** Fecha del evento; se valida que no sea anterior al día de hoy (se permite hoy mismo). */
     date: {
       type: Date,
       required: [true, 'La fecha es obligatoria'],
       validate: {
         validator: function (value) {
-          return value >= new Date();
+          // El input de fecha (YYYY-MM-DD) se parsea como medianoche UTC.
+          // Se usa setUTCHours para que el umbral "inicio de hoy" también sea
+          // medianoche UTC y la comparación sea consistente sin importar la zona horaria del servidor.
+          const today = new Date();
+          today.setUTCHours(0, 0, 0, 0);
+          return value >= today;
         },
-        message: 'La fecha del evento no puede ser en el pasado',
+        message: 'La fecha del evento no puede ser anterior al día de hoy',
       },
     },
     /** Hora del evento (texto libre, ej. "14:00"). */

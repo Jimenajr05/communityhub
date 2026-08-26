@@ -12,7 +12,7 @@ const authService = require('../services/auth.service');
  */
 async function register(req, res, next) {
   try {
-    const { firstName, lastName, email, password, profilePicture } = req.body;
+    const { firstName, lastName, email, password, profilePicture, role } = req.body;
 
     if (!firstName || !lastName || !email || !password) {
       throw ApiError.badRequest('Nombre, apellido, correo y contraseña son obligatorios');
@@ -28,6 +28,7 @@ async function register(req, res, next) {
       email,
       password,
       profilePicture,
+      role,
     });
 
     res.status(201).json({

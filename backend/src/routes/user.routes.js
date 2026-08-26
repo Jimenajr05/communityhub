@@ -15,8 +15,60 @@ const router = express.Router();
 router.get('/me/registrations', authenticate, registrationController.getMyRegistrations);
 /** GET /me/favorites - Lista los eventos favoritos del usuario autenticado. */
 router.get('/me/favorites', authenticate, favoriteController.getMyFavorites);
-/** POST /me/avatar - Sube/actualiza la foto de perfil del usuario autenticado. */
+/** GET /me/avatar - Sube/actualiza la foto de perfil del usuario autenticado. */
 router.post('/me/avatar', authenticate, upload.single('avatar'), userController.uploadAvatar);
+
+/** GET /public/organizers - Obtiene la lista pública de organizadores de la comunidad para filtros. */
+router.get('/public/organizers', async (req, res, next) => {
+  try {
+    const User = require('../models/User');
+    const organizers = await User.find({ role: { $in: ['organizador', 'administrador'] } })
+      .select('_id firstName lastName profilePicture')
+      .sort({ firstName: 1 });
+    res.json({ success: true, data: { organizers } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /me/become-organizer
+ * Permite que un usuario con rol 'usuario' se autopromueva a 'organizador'.
+ * No requiere aprobación de un administrador.
+ */
+router.post('/me/become-organizer', authenticate, async (req, res, next) => {
+  try {
+    const User = require('../models/User');
+    const ApiError = require('../utils/ApiError');
+
+    const user = await User.findById(req.user.id);
+    if (!user) throw ApiError.notFound('Usuario no encontrado');
+
+    if (user.role === 'organizador') {
+      return res.json({ success: true, message: 'Ya tienes el rol de organizador', data: { user } });
+    }
+    if (user.role === 'administrador') {
+      return res.json({ success: true, message: 'Como administrador ya puedes gestionar actividades', data: { user } });
+    }
+
+    user.role = 'organizador';
+    await user.save();
+
+    // Actualiza también los datos de sesión en req.user
+    req.user.role = 'organizador';
+
+    const plain = user.toObject();
+    delete plain.password;
+
+    res.json({
+      success: true,
+      message: 'Ahora eres organizador. Ya puedes crear y gestionar actividades.',
+      data: { user: plain },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 /**
  * Middleware de autorización: permite continuar solo si el usuario autenticado es administrador
