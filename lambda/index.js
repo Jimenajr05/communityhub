@@ -32,12 +32,13 @@ const registrationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Esquema simplificado de Event: título, categoría, fecha y estado de la actividad
+// Esquema simplificado de Event: título, categoría, fecha, hora y estado de la actividad
 const eventSchema = new mongoose.Schema(
   {
     title: { type: String },
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
     date: { type: Date },
+    time: { type: String },
     status: { type: String },
   },
   { timestamps: true }
@@ -62,6 +63,35 @@ const Registration = mongoose.models.Registration || mongoose.model('Registratio
 const Event = mongoose.models.Event || mongoose.model('Event', eventSchema);
 const User = mongoose.models.User || mongoose.model('User', userSchema);
 const Category = mongoose.models.Category || mongoose.model('Category', categorySchema);
+
+/**
+ * Obtiene la fecha y hora exacta de inicio de un evento.
+ */
+function getEventStartDateTime(ev) {
+  if (!ev || !ev.date) return null;
+  const baseDate = new Date(ev.date);
+  if (isNaN(baseDate.getTime())) return null;
+
+  const year = baseDate.getUTCFullYear();
+  const month = baseDate.getUTCMonth();
+  const day = baseDate.getUTCDate();
+
+  let hours = 0;
+  let minutes = 0;
+
+  if (ev.time) {
+    const match = String(ev.time).toLowerCase().trim().match(/^(\d{1,2}):(\d{2})\s*(am|pm)?$/);
+    if (match) {
+      hours = parseInt(match[1], 10);
+      minutes = parseInt(match[2], 10);
+      const meridian = match[3];
+      if (meridian === 'pm' && hours < 12) hours += 12;
+      if (meridian === 'am' && hours === 12) hours = 0;
+    }
+  }
+
+  return new Date(year, month, day, hours, minutes, 0, 0);
+}
 
 /**
  * Asegura que exista una conexión activa a MongoDB, reutilizando la conexión
@@ -99,10 +129,12 @@ exports.handler = async (event, context) => {
     // Límite superior: dentro de las próximas 24 horas desde ahora
     const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-    // Actividades activas cuya fecha cae dentro de la ventana de 24 horas
-    const upcomingEvents = await Event.find({
-      status: 'active',
-      date: { $gte: now, $lte: next24Hours },
+    // Obtenemos actividades activas y filtramos por hora exacta de inicio dentro de las próximas 24 horas
+    const allActiveEvents = await Event.find({ status: 'active' });
+    const upcomingEvents = allActiveEvents.filter((ev) => {
+      const start = getEventStartDateTime(ev);
+      if (!start) return false;
+      return start >= now && start <= next24Hours;
     });
 
     // Contador de notificaciones nuevas creadas en esta ejecución
@@ -173,29 +205,55 @@ exports.reportHandler = async (event, context) => {
     await ensureConnection();
 
     const now = new Date();
-    await Event.updateMany(
-      { status: 'active', date: { $lt: now } },
-      { status: 'finished' }
-    );
 
-    // Estadísticas generales calculadas en paralelo para minimizar el tiempo de ejecución
+    // Obtenemos todos los eventos para calcular estados en tiempo real sin mutar la BD
+    const allEvents = await Event.find({});
+    let activeEvents = 0;
+    let finishedEvents = 0;
+
+    for (const ev of allEvents) {
+      if (ev.status === 'cancelled') continue;
+
+      const baseDate = new Date(ev.date);
+      const end = new Date(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), baseDate.getUTCDate());
+
+      if (ev.time) {
+        const match = String(ev.time).toLowerCase().trim().match(/^(\d{1,2}):(\d{2})\s*(am|pm)?$/);
+        if (match) {
+          let h = parseInt(match[1], 10);
+          const m = parseInt(match[2], 10);
+          const meridian = match[3];
+          if (meridian === 'pm' && h < 12) h += 12;
+          if (meridian === 'am' && h === 12) h = 0;
+          end.setHours(h + 2, m, 0, 0);
+        } else {
+          end.setHours(23, 59, 59, 999);
+        }
+      } else {
+        end.setHours(23, 59, 59, 999);
+      }
+
+      if (now > end) {
+        finishedEvents++;
+      } else {
+        activeEvents++;
+      }
+    }
+
+    // Estadísticas generales calculadas en paralelo
     const [
       totalUsers,
       totalOrganizers,
-      totalEvents,
-      activeEvents,
-      finishedEvents,
       totalRegistrations,
       admins,
     ] = await Promise.all([
       User.countDocuments({}),
       User.countDocuments({ role: 'organizador' }),
-      Event.countDocuments({}),
-      Event.countDocuments({ status: 'active' }),
-      Event.countDocuments({ status: 'finished' }),
       Registration.countDocuments({ status: 'confirmed' }),
       User.find({ role: 'administrador' }, '_id'),
     ]);
+
+    const totalEvents = allEvents.length;
 
     // Actividad con más inscripciones confirmadas (agrupando registros por evento)
     const popularAgg = await Registration.aggregate([
