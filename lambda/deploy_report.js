@@ -11,6 +11,8 @@ const path = require('path');
 const {
   IAMClient,
   GetRoleCommand,
+  CreateRoleCommand,
+  AttachRolePolicyCommand,
 } = require('@aws-sdk/client-iam');
 const {
   LambdaClient,
@@ -84,23 +86,37 @@ async function sleep(ms) {
  * existe (fue creado previamente por deploy.js).
  * @returns {Promise<string>} El ARN del rol IAM.
  */
-async function getRoleArn() {
-  const res = await iam.send(new GetRoleCommand({ RoleName: ROLE_NAME }));
-  return res.Role.Arn;
+async function getOrCreateRole() {
+  console.log(`[IAM] Obteniendo rol de ejecucion desde la funcion existente...`);
+  try {
+    const fn = await lambda.send(new GetFunctionCommand({ FunctionName: 'communityhub-notifications' }));
+    if (fn?.Configuration?.Role) {
+      console.log(`[IAM] Rol reutilizado: ${fn.Configuration.Role}`);
+      return fn.Configuration.Role;
+    }
+  } catch (err) {
+    console.log(`[IAM] No se pudo obtener rol de communityhub-notifications: ${err.message}`);
+  }
+
+  return 'arn:aws:iam::475487646360:role/service-role/communityhub-notifications-role-sj0y7ruh';
 }
+
+const AdmZip = require('adm-zip');
 
 /**
  * Crea la función Lambda de reportes si no existe, o actualiza su código y
- * configuración si ya existe, a partir del ZIP generado previamente.
+ * configuración si ya existe, a partir del ZIP generado dinámicamente.
  * @param {string} roleArn - ARN del rol IAM de ejecución a asignar (solo se usa al crear).
  * @returns {Promise<string>} El ARN de la función Lambda desplegada.
  */
 async function deployLambda(roleArn) {
-  const zipPath = path.resolve(__dirname, 'communityhub-lambda.zip');
-  if (!fs.existsSync(zipPath)) {
-    throw new Error(`Archivo zip no encontrado en ${zipPath}. Ejecuta primero pack_and_upload.js o zipea manualmente.`);
-  }
-  const zipBuffer = fs.readFileSync(zipPath);
+  console.log('[Zip] Empaquetando index.js y dependencias con adm-zip...');
+  const zip = new AdmZip();
+  zip.addLocalFile(path.join(__dirname, 'index.js'));
+  zip.addLocalFile(path.join(__dirname, 'package.json'));
+  zip.addLocalFolder(path.join(__dirname, 'node_modules'), 'node_modules');
+  const zipBuffer = zip.toBuffer();
+  console.log(`[Zip] Paquete ZIP generado: ${(zipBuffer.length / 1024 / 1024).toFixed(2)} MB`);
 
   let functionExists = false;
   let lambdaArn = '';
@@ -223,10 +239,11 @@ async function testInvocation() {
 async function main() {
   try {
     console.log('=== Despliegue de AWS Lambda: reporte periódico de estadísticas ===');
-    console.log(`Región: ${region}`);
-    const roleArn = await getRoleArn();
+    const roleArn = await getOrCreateRole();
     const lambdaArn = await deployLambda(roleArn);
     await setupEventBridge(lambdaArn);
+    console.log('\n[Esperando 10 segundos para que Lambda pase a estado Activo...]');
+    await sleep(10000);
     await testInvocation();
     console.log('\n[OK] Despliegue del reporte completado con éxito en AWS!');
   } catch (error) {

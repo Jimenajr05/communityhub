@@ -881,15 +881,27 @@ const tasaActivasOrg = computed(() => {
 
 .signals-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 1200px) {
+  .signals-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .signals-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .signal-card {
   display: flex;
   align-items: center;
-  gap: 1.15rem;
-  padding: 1.35rem 1.5rem;
+  gap: 0.85rem;
+  padding: 1.15rem 1.1rem;
   border-radius: var(--ch-radius-md);
   background: var(--ch-paper);
   border: 1px solid var(--ch-line);
@@ -898,7 +910,6 @@ const tasaActivasOrg = computed(() => {
   box-shadow: var(--ch-shadow-sm);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
-  overflow: hidden;
 }
 
 .signal-card:hover {
@@ -908,8 +919,8 @@ const tasaActivasOrg = computed(() => {
 }
 
 .signal-card__icon {
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: var(--ch-radius-sm);
   display: flex;
   align-items: center;
@@ -943,12 +954,13 @@ const tasaActivasOrg = computed(() => {
 
 .signal-card__body {
   flex: 1;
+  min-width: 0;
 }
 
 .signal-card__value {
   display: block;
   font-family: var(--ch-font-display);
-  font-size: 1.85rem;
+  font-size: 1.65rem;
   font-weight: 700;
   color: #ffffff;
   line-height: 1;
@@ -956,22 +968,26 @@ const tasaActivasOrg = computed(() => {
 }
 
 .signal-card__label {
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   color: var(--ch-text-on-paper-muted);
+  line-height: 1.25;
+  display: block;
 }
 
 .signal-card__badge-sub {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.3rem;
   font-family: var(--ch-font-mono);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  padding: 0.25rem 0.6rem;
+  padding: 0.22rem 0.52rem;
   border-radius: var(--ch-radius-full);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--ch-line);
   color: var(--ch-text-on-paper-muted);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* Grilla Central */
