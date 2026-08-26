@@ -72,11 +72,12 @@ const rol = computed(() => authStore.usuario?.role);
 // Para rol usuario
 const proximaActividad = computed(() => metrics.value?.upcomingEvents?.[0] ?? null);
 const otrasProximas = computed(() => metrics.value?.upcomingEvents?.slice(1, 4) ?? []);
+const actividadesHistorial = computed(() => metrics.value?.historyEvents ?? []);
 
 function fechaLegible(fecha: string) {
   if (!fecha) return '';
   const d = new Date(fecha);
-  return new Intl.DateTimeFormat('es-CR', { day: 'numeric', month: 'short', year: 'numeric' }).format(d);
+  return new Intl.DateTimeFormat('es-CR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(d);
 }
 
 // Cálculo de días restantes hasta la próxima actividad
@@ -184,7 +185,7 @@ const tasaActivasOrg = computed(() => {
              ============================================================= -->
         <div v-if="rol === 'usuario'" class="user-dashboard-layout">
           
-          <!-- FILA SUPERIOR: 3 TARJETAS SEÑAL CON GLOW Y MINI INDICADORES -->
+          <!-- FILA SUPERIOR: 4 TARJETAS SEÑAL CON GLOW Y MINI INDICADORES -->
           <div class="signals-row">
             <NuxtLink to="/mis-inscripciones" class="signal-card signal-card--tickets">
               <div class="signal-card__icon"><Ticket :size="20" :stroke-width="2" /></div>
@@ -195,6 +196,18 @@ const tasaActivasOrg = computed(() => {
               <div class="signal-card__badge-sub">
                 <Zap :size="12" :stroke-width="2.2" />
                 <span>{{ metrics.upcomingCount ?? 0 }} activas</span>
+              </div>
+            </NuxtLink>
+
+            <NuxtLink to="/mis-inscripciones" class="signal-card signal-card--history">
+              <div class="signal-card__icon"><Clock :size="20" :stroke-width="2" /></div>
+              <div class="signal-card__body">
+                <span class="signal-card__value">{{ metrics.historyCount ?? 0 }}</span>
+                <span class="signal-card__label">Historial (Concluidas)</span>
+              </div>
+              <div class="signal-card__badge-sub">
+                <CheckCircle2 :size="12" :stroke-width="2.2" />
+                <span>Asistidas</span>
               </div>
             </NuxtLink>
 
@@ -460,7 +473,7 @@ const tasaActivasOrg = computed(() => {
              ============================================================= -->
         <div v-else-if="rol === 'organizador'" class="org-dashboard-layout">
           
-          <!-- 4 TARJETAS KPI DE ORGANIZADOR CON ACENTOS Y PORCENTAJES -->
+          <!-- 5 TARJETAS KPI DE ORGANIZADOR -->
           <div class="org-stat-grid">
             <div class="org-stat-card panel-card">
               <div class="org-stat-card__icon org-stat-card__icon--primary">
@@ -475,9 +488,9 @@ const tasaActivasOrg = computed(() => {
               <div class="org-stat-card__icon org-stat-card__icon--leaf">
                 <CalendarCheck2 :size="18" :stroke-width="2" />
               </div>
-              <span class="org-stat-card__value text-leaf">{{ metrics.activeEventsCount ?? 0 }}</span>
-              <span class="org-stat-card__label">Convocatorias Activas</span>
-              <div class="org-stat-card__pill org-stat-card__pill--leaf">{{ tasaActivasOrg }}% del total</div>
+              <span class="org-stat-card__value text-leaf">{{ metrics.upcomingEventsCount ?? metrics.activeEventsCount ?? 0 }}</span>
+              <span class="org-stat-card__label">Actividades Próximas</span>
+              <div class="org-stat-card__pill org-stat-card__pill--leaf">Convocatoria en curso</div>
             </div>
 
             <div class="org-stat-card panel-card">
@@ -485,8 +498,17 @@ const tasaActivasOrg = computed(() => {
                 <Users :size="18" :stroke-width="2" />
               </div>
               <span class="org-stat-card__value text-amber">{{ metrics.totalParticipants ?? 0 }}</span>
-              <span class="org-stat-card__label">Participantes Totales</span>
-              <div class="org-stat-card__pill org-stat-card__pill--amber">Comunidad conectada</div>
+              <span class="org-stat-card__label">Número de Participantes</span>
+              <div class="org-stat-card__pill org-stat-card__pill--amber">Inscritos confirmados</div>
+            </div>
+
+            <div class="org-stat-card panel-card">
+              <div class="org-stat-card__icon org-stat-card__icon--primary">
+                <CheckCircle2 :size="18" :stroke-width="2" />
+              </div>
+              <span class="org-stat-card__value" style="color: var(--ch-marigold);">{{ metrics.availableCapacity ?? 0 }}</span>
+              <span class="org-stat-card__label">Capacidad Disponible</span>
+              <div class="org-stat-card__pill">Cupos libres acumulados</div>
             </div>
 
             <div class="org-stat-card panel-card">
@@ -495,7 +517,7 @@ const tasaActivasOrg = computed(() => {
               </div>
               <span class="org-stat-card__value text-rose">{{ metrics.cancelledEventsCount ?? 0 }}</span>
               <span class="org-stat-card__label">Actividades Canceladas</span>
-              <div class="org-stat-card__pill org-stat-card__pill--rose">Sin cupos</div>
+              <div class="org-stat-card__pill org-stat-card__pill--rose">Desactivadas</div>
             </div>
           </div>
 
@@ -726,10 +748,20 @@ const tasaActivasOrg = computed(() => {
                 <div class="health-metric-item">
                   <div class="health-metric-info">
                     <span>Actividades activas actualmente</span>
-                    <strong>{{ metrics.activeEvents ?? 0 }} en curso</strong>
+                    <strong>{{ metrics.activeEvents ?? 0 }} en curso / próximas</strong>
                   </div>
                   <div class="health-meter-bar">
                     <div class="health-meter-fill health-meter-fill--leaf" style="width: 85%;" />
+                  </div>
+                </div>
+
+                <div class="health-metric-item">
+                  <div class="health-metric-info">
+                    <span>Actividades finalizadas</span>
+                    <strong>{{ metrics.finishedEvents ?? 0 }} concluidas</strong>
+                  </div>
+                  <div class="health-meter-bar">
+                    <div class="health-meter-fill" style="width: 65%; background: var(--ch-violet);" />
                   </div>
                 </div>
 
@@ -889,6 +921,12 @@ const tasaActivasOrg = computed(() => {
   background: rgba(124, 92, 252, 0.15);
   color: var(--ch-coral-light);
   border: 1px solid rgba(124, 92, 252, 0.3);
+}
+
+.signal-card--history .signal-card__icon {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--ch-leaf);
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .signal-card--favs .signal-card__icon {

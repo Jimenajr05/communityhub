@@ -84,6 +84,8 @@ export const useAuthStore = defineStore('auth', {
       lastName: string;
       email: string;
       password: string;
+      profilePicture?: string;
+      role?: 'usuario' | 'organizador';
     }) {
       const { apiFetch } = useApi();
       this.cargando = true;
@@ -135,6 +137,18 @@ export const useAuthStore = defineStore('auth', {
       const respuesta = await apiFetch<MePayload>(`/users/${this.usuario.id}`, {
         method: 'PUT',
         body: payload,
+      });
+      this.usuario = respuesta.data.user;
+    },
+
+    /**
+     * Promueve al usuario autenticado de rol 'usuario' a 'organizador'.
+     * Actualiza el estado local del store tras la confirmación del backend.
+     */
+    async convertirseEnOrganizador() {
+      const { apiFetch } = useApi();
+      const respuesta = await apiFetch<MePayload>('/users/me/become-organizer', {
+        method: 'POST',
       });
       this.usuario = respuesta.data.user;
     },

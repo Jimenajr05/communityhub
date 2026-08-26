@@ -48,12 +48,33 @@ const totalDisponibles = computed(() => eventsStore.paginacion?.total ?? eventsS
 function fechaCorta(fecha: string) {
   if (!fecha) return '';
   const d = new Date(fecha);
-  return new Intl.DateTimeFormat('es-CR', { day: 'numeric', month: 'short' }).format(d).replace('.', '');
+  return new Intl.DateTimeFormat('es-CR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(d).replace('.', '');
 }
 
 async function onLogout() {
   await authStore.logout();
 }
+
+const router = useRouter();
+const promoviendoOrganizador = ref(false);
+
+/** Promueve al usuario actual a organizador y lo redirige a /mis-actividades */
+async function convertirseEnOrganizador() {
+  promoviendoOrganizador.value = true;
+  try {
+    await authStore.convertirseEnOrganizador();
+    router.push('/mis-actividades');
+  } catch {
+    // Si falla, al menos intentamos navegar
+  } finally {
+    promoviendoOrganizador.value = false;
+  }
+}
+
+/** Indica si el usuario tiene permisos de organizador o superior */
+const esOrganizadorOAdmin = computed(() =>
+  authStore.usuario?.role === 'organizador' || authStore.usuario?.role === 'administrador'
+);
 </script>
 
 <template>
@@ -260,10 +281,21 @@ async function onLogout() {
             Publica tus actividades, administra las inscripciones y conecta directamente con personas interesadas en tus iniciativas.
           </p>
           <div class="home-cta__buttons">
-            <NuxtLink v-if="authStore.estaAutenticado" to="/mis-actividades" class="pill-btn pill-btn--primary">
-              Crear mi actividad
-            </NuxtLink>
-            <NuxtLink v-else to="/registro" class="pill-btn pill-btn--primary">
+            <template v-if="authStore.estaAutenticado">
+              <NuxtLink v-if="esOrganizadorOAdmin" to="/mis-actividades" class="pill-btn pill-btn--primary">
+                Crear mi actividad
+              </NuxtLink>
+              <button
+                v-else
+                type="button"
+                class="pill-btn pill-btn--primary"
+                :disabled="promoviendoOrganizador"
+                @click="convertirseEnOrganizador"
+              >
+                {{ promoviendoOrganizador ? 'Activando perfil...' : 'Convertirme en organizador' }}
+              </button>
+            </template>
+            <NuxtLink v-else to="/registro?role=organizador" class="pill-btn pill-btn--primary">
               Crear cuenta de organizador
             </NuxtLink>
             <NuxtLink to="/actividades" class="pill-btn pill-btn--secondary">

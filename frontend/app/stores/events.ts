@@ -83,6 +83,7 @@ export interface FiltrosActividades {
 interface EventsState {
   actividades: Actividad[]; // Listado de actividades obtenidas de la última búsqueda
   categorias: CategoriaResumen[]; // Categorías disponibles
+  organizadores: OrganizadorResumen[]; // Organizadores comunitarios
   misInscripciones: Inscripcion[]; // Inscripciones del usuario autenticado
   misFavoritos: Favorito[]; // Actividades favoritas del usuario autenticado
   paginacion: Paginacion | null; // Información de paginación de la última búsqueda
@@ -94,6 +95,7 @@ export const useEventsStore = defineStore('events', {
   state: (): EventsState => ({
     actividades: [],
     categorias: [],
+    organizadores: [],
     misInscripciones: [],
     misFavoritos: [],
     paginacion: null,
@@ -167,6 +169,20 @@ export const useEventsStore = defineStore('events', {
         this.categorias = respuesta.data.categories;
       } catch {
         this.categorias = [];
+      }
+    },
+
+    /** Carga la lista pública de organizadores desde la API. */
+    async cargarOrganizadores() {
+      const { apiFetch } = useApi();
+      try {
+        const respuesta = await apiFetch<{
+          success: boolean;
+          data: { organizers: OrganizadorResumen[] };
+        }>('/users/public/organizers');
+        this.organizadores = respuesta.data.organizers;
+      } catch {
+        this.organizadores = [];
       }
     },
 

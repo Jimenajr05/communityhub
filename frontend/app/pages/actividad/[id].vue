@@ -142,6 +142,7 @@ const fechaFormateada = computed(() => {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
+    timeZone: 'UTC',
   }).format(fecha);
 });
 

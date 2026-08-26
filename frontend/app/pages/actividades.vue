@@ -3,7 +3,7 @@
   Consola integrada de búsqueda por texto, categorías, disponibilidad y fecha.
 -->
 <script setup lang="ts">
-import { Search, CalendarDays, CheckCircle, X, SlidersHorizontal, RotateCcw, Sparkles } from 'lucide-vue-next';
+import { Search, CalendarDays, CheckCircle, X, SlidersHorizontal, RotateCcw, Sparkles, User, ChevronDown, Check } from 'lucide-vue-next';
 import { useCategoryStyle } from '~/composables/useCategoryStyle';
 
 useHead({
@@ -22,6 +22,15 @@ const searchTerm = ref('');
 const categoriaSeleccionada = ref<string | null>(null);
 const soloConCupo = ref(false);
 const fechaSeleccionada = ref('');
+const organizadorSeleccionado = ref<string | null>(null);
+const orgDropdownOpen = ref(false);
+
+function cerrarOrgDropdown(e: MouseEvent) {
+  const target = e.target as HTMLElement;
+  if (!target.closest('.org-combobox')) {
+    orgDropdownOpen.value = false;
+  }
+}
 
 function buscarConFiltros() {
   eventsStore.buscar({
@@ -29,12 +38,19 @@ function buscarConFiltros() {
     category: categoriaSeleccionada.value || undefined,
     available: soloConCupo.value || undefined,
     date: fechaSeleccionada.value || undefined,
+    organizer: organizadorSeleccionado.value || undefined,
   });
 }
 
 onMounted(() => {
   eventsStore.cargarCategorias();
+  eventsStore.cargarOrganizadores();
   buscarConFiltros();
+  document.addEventListener('click', cerrarOrgDropdown);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', cerrarOrgDropdown);
 });
 
 let debounceHandle: ReturnType<typeof setTimeout> | null = null;
@@ -71,6 +87,7 @@ function limpiarTodosLosFiltros() {
   categoriaSeleccionada.value = null;
   soloConCupo.value = false;
   fechaSeleccionada.value = '';
+  organizadorSeleccionado.value = null;
   buscarConFiltros();
 }
 
@@ -80,6 +97,7 @@ const filtrosActivosCount = computed(() => {
   if (categoriaSeleccionada.value) count++;
   if (soloConCupo.value) count++;
   if (fechaSeleccionada.value) count++;
+  if (organizadorSeleccionado.value) count++;
   return count;
 });
 
@@ -182,6 +200,50 @@ const listaActividades = computed(() => (destacada.value ? eventsStore.actividad
               </button>
             </label>
 
+            <!-- Combobox de organizador -->
+            <div class="org-combobox" v-if="eventsStore.organizadores.length > 0">
+              <button
+                type="button"
+                class="console-chip org-combobox__trigger"
+                :class="{ 'console-chip--active': organizadorSeleccionado }"
+                @click.stop="orgDropdownOpen = !orgDropdownOpen"
+              >
+                <User :size="13" :stroke-width="2.2" />
+                <span class="org-combobox__label">
+                  {{ organizadorSeleccionado
+                    ? eventsStore.organizadores.find(o => o._id === organizadorSeleccionado)?.firstName + ' ' + eventsStore.organizadores.find(o => o._id === organizadorSeleccionado)?.lastName
+                    : 'Organizador' }}
+                </span>
+                <ChevronDown :size="11" :stroke-width="2.2" class="org-combobox__arrow" :class="{ 'org-combobox__arrow--open': orgDropdownOpen }" />
+              </button>
+
+              <Transition name="dropdown">
+                <ul v-if="orgDropdownOpen" class="org-combobox__list">
+                  <li>
+                    <button
+                      type="button"
+                      class="org-combobox__option"
+                      :class="{ 'org-combobox__option--active': !organizadorSeleccionado }"
+                      @click="organizadorSeleccionado = null; buscarConFiltros(); orgDropdownOpen = false;"
+                    >
+                      <span>Todos los organizadores</span>
+                    </button>
+                  </li>
+                  <li v-for="org in eventsStore.organizadores" :key="org._id">
+                    <button
+                      type="button"
+                      class="org-combobox__option"
+                      :class="{ 'org-combobox__option--active': organizadorSeleccionado === org._id }"
+                      @click="organizadorSeleccionado = org._id; buscarConFiltros(); orgDropdownOpen = false;"
+                    >
+                      <span>{{ org.firstName }} {{ org.lastName }}</span>
+                      <Check v-if="organizadorSeleccionado === org._id" :size="12" :stroke-width="2.4" />
+                    </button>
+                  </li>
+                </ul>
+              </Transition>
+            </div>
+
             <!-- Botón para resetear todos los filtros -->
             <button
               v-if="filtrosActivosCount > 0"
@@ -271,13 +333,16 @@ const listaActividades = computed(() => (destacada.value ? eventsStore.actividad
 
 .catalog-header {
   position: relative;
-  overflow: hidden;
+  z-index: 10;
   padding: 3.5rem 1.5rem 3rem;
   background: radial-gradient(circle at 50% 0%, var(--ch-ink-soft) 0%, var(--ch-ink-2) 100%);
   border-bottom: 1px solid var(--ch-line);
 }
 
 .catalog-header__grid {
+  overflow: hidden;
+  position: absolute;
+  inset: 0;
   mask-image: radial-gradient(circle at 30% 0%, black 0%, transparent 75%);
 }
 
@@ -392,6 +457,8 @@ const listaActividades = computed(() => (destacada.value ? eventsStore.actividad
   flex-wrap: wrap;
   align-items: center;
   gap: 0.55rem;
+  position: relative;
+  z-index: 50;
 }
 
 .console-chip {
@@ -479,6 +546,120 @@ const listaActividades = computed(() => (destacada.value ? eventsStore.actividad
 .console-chip--reset:hover {
   background: var(--ch-rose);
   color: #ffffff;
+}
+
+.console-chip--select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.console-chip--select select {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-family: var(--ch-font-mono);
+  font-size: 0.76rem;
+  cursor: pointer;
+  outline: none;
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  max-width: 160px;
+}
+
+.console-chip--select select option {
+  background: var(--ch-surface-2, #1a1a2e);
+  color: var(--ch-text-primary, #e2e8f0);
+}
+
+/* Combobox de organizador */
+.org-combobox {
+  position: relative;
+  display: inline-block;
+}
+
+.org-combobox__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.org-combobox__label {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.org-combobox__arrow {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  opacity: 0.7;
+}
+
+.org-combobox__arrow--open {
+  transform: rotate(180deg);
+}
+
+.org-combobox__list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 200;
+  min-width: 200px;
+  background: var(--ch-surface-2, #141428);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 0.4rem;
+  list-style: none;
+  margin: 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px);
+}
+
+.org-combobox__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.45rem 0.75rem;
+  background: none;
+  border: none;
+  border-radius: 0.5rem;
+  color: var(--ch-text-muted, #94a3b8);
+  font-size: 0.8rem;
+  font-family: var(--ch-font-mono);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.org-combobox__option:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--ch-text-primary, #e2e8f0);
+}
+
+.org-combobox__option--active {
+  background: rgba(139, 92, 246, 0.15);
+  color: var(--ch-violet, #8b5cf6);
+  font-weight: 600;
+}
+
+/* Transición del dropdown */
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 /* Área de catálogo principal */

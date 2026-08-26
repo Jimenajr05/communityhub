@@ -10,11 +10,15 @@ const props = withDefaults(defineProps<{ actividad: Actividad; featured?: boolea
 
 const categoryStyle = computed(() => useCategoryStyle(props.actividad.category?.name));
 
+const estadoInfo = computed(() =>
+  getEventStatus(props.actividad.status, props.actividad.date, props.actividad.time)
+);
+
 const fechaCorta = computed(() => {
   const fecha = new Date(props.actividad.date);
   return {
-    dia: new Intl.DateTimeFormat('es-CR', { day: 'numeric' }).format(fecha),
-    mes: new Intl.DateTimeFormat('es-CR', { month: 'short' }).format(fecha).replace('.', '').toUpperCase(),
+    dia: new Intl.DateTimeFormat('es-CR', { day: 'numeric', timeZone: 'UTC' }).format(fecha),
+    mes: new Intl.DateTimeFormat('es-CR', { month: 'short', timeZone: 'UTC' }).format(fecha).replace('.', '').toUpperCase(),
   };
 });
 
@@ -102,7 +106,10 @@ const organizadorIniciales = computed(() => {
             />
           </div>
           <div class="event-node-card__capacity-label">
-            <span v-if="sinCupo" class="status-alert">
+            <span v-if="estadoInfo.code === 'finished'" class="status-finished">
+              <AlertCircle :size="11" :stroke-width="2.4" /> Actividad finalizada
+            </span>
+            <span v-else-if="sinCupo" class="status-alert">
               <AlertCircle :size="11" :stroke-width="2.4" /> Sin cupo disponible
             </span>
             <span v-else class="status-available">
@@ -420,6 +427,14 @@ const organizadorIniciales = computed(() => {
 
 .status-alert {
   color: var(--ch-rose);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 600;
+}
+
+.status-finished {
+  color: var(--ch-text-on-paper-muted);
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;

@@ -51,15 +51,10 @@ async function cancelar(eventId: string) {
   }
 }
 
-function esFutura(fecha?: string) {
-  if (!fecha) return false;
-  return new Date(fecha) >= new Date();
-}
-
 function estadoInscripcion(ins: Inscripcion) {
   if (ins.status === 'cancelled') {
     return {
-      texto: 'Cancelada',
+      texto: 'Pase cancelado',
       clase: 'status-pill--cancelled',
     };
   }
@@ -69,12 +64,23 @@ function estadoInscripcion(ins: Inscripcion) {
       clase: 'status-pill--cancelled',
     };
   }
-  if (!ins.event?.date || !esFutura(ins.event.date) || ins.event.status === 'finished') {
+  
+  const statusInfo = getEventStatus(ins.event?.status, ins.event?.date, ins.event?.time);
+
+  if (statusInfo.code === 'finished') {
     return {
       texto: 'Finalizada',
       clase: 'status-pill--past',
     };
   }
+
+  if (statusInfo.code === 'ongoing') {
+    return {
+      texto: 'En curso',
+      clase: 'status-pill--upcoming',
+    };
+  }
+
   return {
     texto: 'Confirmada (Próxima)',
     clase: 'status-pill--upcoming',
@@ -82,7 +88,10 @@ function estadoInscripcion(ins: Inscripcion) {
 }
 
 function puedeCancelar(ins: Inscripcion) {
-  return ins.status === 'confirmed' && ins.event?.status === 'active' && Boolean(ins.event?.date) && esFutura(ins.event?.date);
+  if (ins.status !== 'confirmed') return false;
+  if (!ins.event) return false;
+  const statusInfo = getEventStatus(ins.event.status, ins.event.date, ins.event.time);
+  return statusInfo.code === 'scheduled' || statusInfo.code === 'ongoing';
 }
 </script>
 
@@ -148,7 +157,7 @@ function puedeCancelar(ins: Inscripcion) {
               <td>
                 <div v-if="ins.event?.date" class="date-cell">
                   <span class="table-date">
-                    {{ new Date(ins.event.date).toLocaleDateString('es-CR', { day: 'numeric', month: 'short', year: 'numeric' }) }}
+                    {{ new Date(ins.event.date).toLocaleDateString('es-CR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) }}
                   </span>
                   <span v-if="ins.event.time" class="table-time">{{ ins.event.time }}</span>
                 </div>

@@ -138,6 +138,7 @@ async function guardar() {
       await eventsStore.crearActividad(payload);
     }
     mostrarFormulario.value = false;
+    resetFormulario();
     await eventsStore.buscar({ organizer: authStore.usuario?.id });
   } catch (err: unknown) {
     const fetchError = err as { data?: { message?: string } };
@@ -229,7 +230,7 @@ async function eliminarActividad(actividad: any) {
                 </NuxtLink>
               </td>
               <td>
-                <span class="table-date">{{ new Date(act.date).toLocaleDateString('es-CR', { day: 'numeric', month: 'short' }) }}</span>
+                <span class="table-date">{{ new Date(act.date).toLocaleDateString('es-CR', { day: 'numeric', month: 'short', timeZone: 'UTC' }) }}</span>
                 <span class="table-loc"> · {{ act.location }}</span>
               </td>
               <td>

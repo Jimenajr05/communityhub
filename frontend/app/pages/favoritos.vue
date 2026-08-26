@@ -78,7 +78,7 @@ async function quitar(eventId: string) {
           <div class="fav-card__meta">
             <span>
               <CalendarDays :size="13" :stroke-width="2.2" />
-              {{ new Date(fav.event.date).toLocaleDateString('es-CR', { day: 'numeric', month: 'short', year: 'numeric' }) }}
+              {{ new Date(fav.event.date).toLocaleDateString('es-CR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) }}
             </span>
             <span>
               <MapPin :size="13" :stroke-width="2.2" />

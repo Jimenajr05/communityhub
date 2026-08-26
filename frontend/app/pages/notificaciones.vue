@@ -23,7 +23,7 @@ definePageMeta({ middleware: 'auth' });
 useHead({ title: 'Centro de Notificaciones · CommunityHub' });
 
 const notificationsStore = useNotificationsStore();
-const filtroActivo = ref<'todas' | 'sin_leer' | 'reminder' | 'registration'>('todas');
+const filtroActivo = ref<'todas' | 'sin_leer' | 'reminder' | 'registration' | 'report'>('todas');
 const refrescando = ref(false);
 
 onMounted(async () => {
@@ -44,10 +44,19 @@ const notificacionesFiltradas = computed(() => {
     return notificationsStore.notificaciones.filter((n) => n.type === 'reminder');
   }
   if (filtroActivo.value === 'registration') {
-    return notificationsStore.notificaciones.filter((n) => n.type === 'registration');
+    return notificationsStore.notificaciones.filter((n) => n.type === 'registration' || n.type === 'cancellation_user');
+  }
+  if (filtroActivo.value === 'report') {
+    return notificationsStore.notificaciones.filter((n) => n.type === 'report');
   }
   return notificationsStore.notificaciones;
 });
+
+const conteosPorTipo = computed(() => ({
+  reminder: notificationsStore.notificaciones.filter((n) => n.type === 'reminder').length,
+  registration: notificationsStore.notificaciones.filter((n) => n.type === 'registration' || n.type === 'cancellation_user').length,
+  report: notificationsStore.notificaciones.filter((n) => n.type === 'report').length,
+}));
 
 function obtenerEtiquetaTipo(tipo: string): string {
   switch (tipo) {
@@ -55,6 +64,10 @@ function obtenerEtiquetaTipo(tipo: string): string {
       return 'Recordatorio de actividad';
     case 'registration':
       return 'Inscripción confirmada';
+    case 'cancellation_user':
+      return 'Cancelación de cupo';
+    case 'cancellation':
+      return 'Actividad cancelada';
     case 'event_update':
       return 'Actualización de evento';
     case 'report':
@@ -173,6 +186,7 @@ async function eliminar(id: string) {
           @click="filtroActivo = 'reminder'"
         >
           Recordatorios
+          <span v-if="conteosPorTipo.reminder > 0" class="tab-count">{{ conteosPorTipo.reminder }}</span>
         </button>
 
         <button
@@ -182,6 +196,18 @@ async function eliminar(id: string) {
           @click="filtroActivo = 'registration'"
         >
           Inscripciones
+          <span v-if="conteosPorTipo.registration > 0" class="tab-count">{{ conteosPorTipo.registration }}</span>
+        </button>
+
+        <button
+          v-if="conteosPorTipo.report > 0"
+          type="button"
+          class="tab-pill"
+          :class="{ 'tab-pill--active': filtroActivo === 'report' }"
+          @click="filtroActivo = 'report'"
+        >
+          Reportes
+          <span class="tab-count">{{ conteosPorTipo.report }}</span>
         </button>
       </div>
 

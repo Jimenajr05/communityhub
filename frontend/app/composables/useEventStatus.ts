@@ -17,8 +17,15 @@ export function parseEventDateTime(fechaStr?: string, horaStr?: string): { start
   const baseDate = new Date(fechaStr);
   if (isNaN(baseDate.getTime())) return null;
 
-  const start = new Date(baseDate);
-  const end = new Date(baseDate);
+  // Las fechas se almacenan como medianoche UTC (ej. 2026-08-26T00:00:00Z).
+  // Extraemos las partes de fecha en UTC y construimos objetos Date en hora local
+  // a partir de esas partes, para que setHours opere sobre el día calendario correcto.
+  const year = baseDate.getUTCFullYear();
+  const month = baseDate.getUTCMonth();
+  const day = baseDate.getUTCDate();
+
+  const start = new Date(year, month, day);
+  const end = new Date(year, month, day);
 
   if (horaStr) {
     const match = horaStr.toLowerCase().trim().match(/^(\d{1,2}):(\d{2})\s*(am|pm)?$/);
@@ -37,7 +44,7 @@ export function parseEventDateTime(fechaStr?: string, horaStr?: string): { start
     }
   }
 
-  // Si no hay hora específica, el evento cubre el día completo
+  // Si no hay hora específica, el evento cubre el día completo en hora local
   start.setHours(0, 0, 0, 0);
   end.setHours(23, 59, 59, 999);
   return { start, end };

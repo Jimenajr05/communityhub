@@ -12,12 +12,16 @@ const firstName = ref(''); // Nombre ingresado en el formulario
 const lastName = ref(''); // Apellido ingresado en el formulario
 const email = ref(''); // Correo ingresado en el formulario
 const password = ref(''); // Contraseña ingresada en el formulario
+const route = useRoute();
+const selectedRole = ref<'usuario' | 'organizador'>(
+  route.query.role === 'organizador' ? 'organizador' : 'usuario'
+);
+const profilePicture = ref(''); // Foto de perfil (opcional, URL)
 const showPassword = ref(false); // Controla si la contraseña se muestra en texto plano
 const errorMessage = ref(''); // Mensaje de error a mostrar tras un intento fallido de registro
 
 const authStore = useAuthStore();
 const router = useRouter();
-const route = useRoute();
 
 // Indica si hay una operación de autenticación en curso (deshabilita el formulario).
 const cargando = computed(() => authStore.cargando);
@@ -45,12 +49,15 @@ async function onSubmit() {
       lastName: lastName.value.trim(),
       email: email.value.trim(),
       password: password.value,
+      profilePicture: profilePicture.value.trim() || undefined,
+      role: selectedRole.value,
     });
     const redirectParam = route.query.redirect;
+    const destinoPorDefecto = selectedRole.value === 'organizador' ? '/mis-actividades' : '/';
     const destino =
       typeof redirectParam === 'string' && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
         ? redirectParam
-        : '/';
+        : destinoPorDefecto;
     router.push(destino);
   } catch (err: unknown) {
     const fetchError = err as { data?: { message?: string } };
@@ -73,6 +80,14 @@ async function onSubmit() {
         <form class="ticket__form" novalidate @submit.prevent="onSubmit">
           <h2>Crea tu cuenta</h2>
           <p class="ticket__subtitle">Regístrate para inscribirte y guardar tus actividades favoritas.</p>
+
+          <div class="field">
+            <label for="reg-role">Tipo de cuenta</label>
+            <select id="reg-role" v-model="selectedRole" :disabled="cargando">
+              <option value="usuario">Participante (Inscribirse a eventos)</option>
+              <option value="organizador">Organizador (Crear y gestionar eventos)</option>
+            </select>
+          </div>
 
           <div class="field-row">
             <div class="field">
@@ -136,6 +151,17 @@ async function onSubmit() {
               </button>
             </div>
             <span class="field-hint">Mínimo 8 caracteres.</span>
+          </div>
+
+          <div class="field">
+            <label for="reg-avatar">Foto de perfil <span class="field-hint">(opcional, URL)</span></label>
+            <input
+              id="reg-avatar"
+              v-model.trim="profilePicture"
+              type="url"
+              placeholder="https://ejemplo.com/tu-foto.jpg"
+              :disabled="cargando"
+            />
           </div>
 
           <p v-if="errorMessage" class="form-error" role="alert">{{ errorMessage }}</p>

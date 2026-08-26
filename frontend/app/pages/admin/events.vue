@@ -116,7 +116,7 @@ const actividadesFiltradas = computed(() => {
                 <span class="organizer-cell">{{ actividad.organizer?.firstName }} {{ actividad.organizer?.lastName }}</span>
               </td>
               <td>
-                <span class="date-cell">{{ new Date(actividad.date).toLocaleDateString('es-CR', { day: 'numeric', month: 'short', year: 'numeric' }) }}</span>
+                <span class="date-cell">{{ new Date(actividad.date).toLocaleDateString('es-CR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) }}</span>
               </td>
               <td>
                 <span class="status-pill" :class="getEventStatus(actividad.status, actividad.date, actividad.time).className">
